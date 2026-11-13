@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  color-scheme: dark;
+  background-color: #07090e;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background-color: #07090e;
+  overscroll-behavior-y: none;
+}
+
+button,
+select,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(0, 240, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #23304b transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #23304b;
+  border-radius: 999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+input[type='range'] {
+  accent-color: #00f0ff;
+}
+
+/* Keep the emergency takeover readable for users who cannot tolerate flashing. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
