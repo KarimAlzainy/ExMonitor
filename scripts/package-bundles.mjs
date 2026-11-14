@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { ZipArchive } from 'archiver';
 
@@ -271,16 +270,6 @@ function createZip(model, platform) {
   });
 }
 
-function sha256(file) {
-  return new Promise((resolve, reject) => {
-    const hash = crypto.createHash('sha256');
-    const stream = fs.createReadStream(file);
-    stream.on('data', (chunk) => hash.update(chunk));
-    stream.on('error', reject);
-    stream.on('end', () => resolve(hash.digest('hex')));
-  });
-}
-
 const models = MODELS.filter((model) => selection.includes(model.id));
 const platforms = PLATFORMS.filter((platform) => platformSelection.includes(platform.id));
 const files = {};
@@ -291,13 +280,11 @@ for (const model of models) {
     process.stdout.write(`Packaging ${model.title} for ${platform.title} ... `);
     const { file, zipPath } = await createZip(model, platform);
     const stats = fs.statSync(zipPath);
-    const digest = await sha256(zipPath);
     files[model.id][platform.id] = {
       file,
       title: model.title,
       platform: platform.title,
       bytes: stats.size,
-      sha256: digest,
       download: model.download
     };
     console.log(`${(stats.size / (1024 * 1024)).toFixed(1)} MB`);
