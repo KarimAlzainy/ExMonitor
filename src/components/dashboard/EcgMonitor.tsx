@@ -210,7 +210,7 @@ export const EcgMonitor: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
-            <h2 className="flex items-center text-[15px] font-medium text-ink-100">
+            <h2 className="flex items-center text-[16px] font-medium text-ink-100">
               Heart trace
               <InfoTip
                 text="The electrocardiogram (ECG) shows the heart's electrical signal. The shape and spacing of each beat help the crew spot strain or an irregular rhythm."
@@ -218,17 +218,17 @@ export const EcgMonitor: React.FC = () => {
               />
             </h2>
           </div>
-          <p className="mt-1 text-[11px] text-ink-500">Continuing trace · 25 mm/s · 10 mm/mV</p>
+          <p className="mt-1 text-[12px] text-ink-400">Continuing trace · 25 mm/s · 10 mm/mV</p>
         </div>
 
         <div className="text-right">
           <div className="flex items-baseline justify-end gap-1.5">
-            <span className="text-[32px] font-medium leading-none tracking-tight tabular-nums text-ink-100">
+            <span className="text-[34px] font-medium leading-none tracking-tight tabular-nums text-ink-100">
               {vitals.heartRate}
             </span>
-            <span className="text-xs text-ink-400">BPM</span>
+            <span className="text-[13px] text-ink-400">BPM</span>
           </div>
-          <div className={`mt-1.5 flex items-center justify-end gap-1.5 text-[11px] ${statusTone.text}`}>
+          <div className={`mt-1.5 flex items-center justify-end gap-1.5 text-[12px] ${statusTone.text}`}>
             <span className={`h-1.5 w-1.5 rounded-full ${statusTone.dot}`} />
             {rhythm}
           </div>
@@ -259,8 +259,8 @@ export const EcgMonitor: React.FC = () => {
 function Reading({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-2 sm:block">
-      <span className="text-[11px] text-ink-500">{label}</span>
-      <span className={`text-[13px] font-medium text-ink-200 sm:mt-0.5 sm:block ${mono ? 'font-mono tabular-nums' : ''}`}>
+      <span className="text-[12px] text-ink-400">{label}</span>
+      <span className={`text-[14px] font-medium text-ink-200 sm:mt-0.5 sm:block ${mono ? 'font-mono tabular-nums' : ''}`}>
         {value}
       </span>
     </div>

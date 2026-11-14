@@ -77,14 +77,20 @@ function detectDevice() {
 function recommendedTier() {
   if (state.phone) return 'none';
   if (state.webgpu === false) return 'none';
+
+  const gpu = String(state.gpu || '').toLowerCase();
+  const discrete = /nvidia|geforce|rtx|quadro|radeon|amd|arc|discrete/.test(gpu);
+
   if (state.memory == null) {
-    if ((state.cores ?? 0) >= 8) return 'phi3';
-    if ((state.cores ?? 0) >= 4) return 'llama3';
-    return 'gemma2';
+    if ((state.cores ?? 0) >= 8 && discrete) return 'phi3';
+    if ((state.cores ?? 0) >= 4) return 'gemma2';
+    return 'none';
   }
-  if (state.memory >= 8) return 'phi3';
-  if (state.memory >= 4) return 'llama3';
-  if (state.memory >= 2) return 'gemma2';
+
+  if (state.memory >= 16 && discrete) return 'phi3';
+  if (state.memory >= 16) return 'llama3';
+  if (state.memory >= 8 && discrete) return 'llama3';
+  if (state.memory >= 4) return 'gemma2';
   return 'none';
 }
 

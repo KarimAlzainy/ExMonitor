@@ -75,16 +75,16 @@ export const DashboardTab: React.FC = () => {
     <div className="space-y-6">
       {sensorNotice && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-3">
-          <p className="flex items-center gap-2 text-[12px] leading-5 text-ink-200">
+          <p className="flex items-center gap-2 text-[13px] leading-5 text-ink-200">
             <Radio className="h-4 w-4 shrink-0 text-caution" strokeWidth={1.6} />
             {sensorNotice}
-            {sensorId && <span className="font-mono text-[10.5px] text-ink-500">{sensorId}</span>}
+            {sensorId && <span className="font-mono text-[11.5px] text-ink-500">{sensorId}</span>}
           </p>
           <a
             href="sensors.html"
             target="_blank"
             rel="noreferrer"
-            className="text-[11px] font-medium text-signal-strong hover:text-ink-100"
+            className="text-[13px] font-medium text-signal-strong hover:text-ink-100"
           >
             Open the sensor page
           </a>
@@ -95,19 +95,22 @@ export const DashboardTab: React.FC = () => {
 
       <section className={`rounded-xl border p-5 ${statusTone.border} ${statusTone.surface}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="flex items-center gap-2 text-sm font-medium text-ink-100">
+          <p className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
             <span className={`h-2 w-2 rounded-full ${statusTone.dot}`} />
             <span className={statusTone.title}>{ruleResult.hazardTitle}</span>
           </p>
-          <span className="flex items-center gap-1 font-mono text-[11px] text-ink-500">
+          <span className="flex items-center gap-1 font-mono text-[12px] text-ink-400">
             {ruleResult.nasaRef}
             <InfoTip text="The NASA reference or flight rule behind this status." label="NASA reference" />
           </span>
         </div>
-        <p className="mt-3 max-w-3xl text-[13px] leading-5 text-ink-300">{ruleResult.hazardDescription}</p>
-        <p className="mt-2 max-w-3xl text-[13px] leading-5 text-ink-200">{ruleResult.recommendedAction}</p>
+        <p className="mt-3 max-w-3xl text-[14px] leading-6 text-ink-300">{ruleResult.hazardDescription}</p>
+        <div className="mt-3 max-w-3xl border-l-2 border-chalk/40 pl-3">
+          <p className="text-[12px] font-medium text-ink-400">What to do</p>
+          <p className="mt-1 text-[14px] leading-6 text-ink-100">{ruleResult.recommendedAction}</p>
+        </div>
         {vitals.source === 'builtin' && (
-          <p className="mt-2 text-[11px] text-ink-500">These are practice readings, not a real body sensor.</p>
+          <p className="mt-3 text-[12px] text-ink-400">These are practice readings, not a real body sensor.</p>
         )}
       </section>
 
@@ -154,14 +157,14 @@ export const DashboardTab: React.FC = () => {
         <RadiationHazardBadge />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-critical/30 bg-space-900 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-critical/30 bg-critical/[0.04] p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <AlertOctagon className="mt-0.5 h-5 w-5 shrink-0 text-critical" strokeWidth={1.5} />
           <div>
-            <p className="text-[13px] font-medium text-ink-100">
+            <p className="text-[15px] font-medium text-ink-100">
               {alertActive ? 'Your crew alert is active' : 'Send a crew alert'}
             </p>
-            <p className="mt-0.5 max-w-xl text-[11px] leading-5 text-ink-500">
+            <p className="mt-1 max-w-xl text-[12px] leading-5 text-ink-400">
               {alertActive
                 ? 'The sender panel below shows the alert. Cancel it there to clear it on every crew screen.'
                 : 'Every device on the crew link shows a full-screen alert until that crew member acknowledges it, or you cancel it from the sender panel.'}
@@ -169,20 +172,20 @@ export const DashboardTab: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden text-[11px] text-ink-500 sm:inline">Crew-declared emergency</span>
+          <span className="hidden text-[12px] text-ink-400 sm:inline">Crew-declared emergency</span>
           <button
             type="button"
             onClick={() => triggerEmergencySOS()}
             disabled={alertActive}
             aria-label="Send a crew emergency alert"
-            className="h-9 rounded-lg border border-critical/40 bg-critical/[0.08] px-3 text-[12px] font-medium text-critical transition-colors hover:bg-critical/15 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-11 rounded-lg border border-critical/40 bg-critical/[0.08] px-4 text-[14px] font-medium text-critical transition-colors hover:bg-critical/15 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {alertActive ? 'Alert active' : 'Send alert'}
           </button>
         </div>
       </div>
 
-      <p className="text-[11px] leading-5 text-ink-500">
+      <p className="text-[12px] leading-5 text-ink-400">
         The console watches the NASA hazards of spaceflight: radiation, isolation, distance from Earth, gravity
         changes and a closed environment.
       </p>

@@ -56,6 +56,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
 
 const STORED_TIER_KEY = 'exmonitor.ai.tier';
 const STORED_BUNDLE_KEY = 'exmonitor.ai.bundle';
+const STORED_CHOICE_KEY = 'exmonitor.ai.user-chosen';
 let bundleConfigPromise: Promise<BundleModelConfig | null> | null = null;
 
 export function modelOption(tier: AiModelTier): ModelOption {
@@ -106,11 +107,20 @@ export function readStoredTier(): AiModelTier | null {
   }
 }
 
-export function storeTier(tier: AiModelTier): void {
+export function storeTier(tier: AiModelTier, userChosen = false): void {
   try {
     window.localStorage.setItem(STORED_TIER_KEY, tier);
+    if (userChosen) window.localStorage.setItem(STORED_CHOICE_KEY, '1');
   } catch {
     // Ignore.
+  }
+}
+
+export function hasStoredTierChoice(): boolean {
+  try {
+    return window.localStorage.getItem(STORED_CHOICE_KEY) === '1';
+  } catch {
+    return false;
   }
 }
 
@@ -130,7 +140,7 @@ function takeRequestedTier(): AiModelTier | null {
     if (!isTier(value)) return null;
     address.searchParams.delete('model');
     window.history.replaceState(null, '', `${address.pathname}${address.search}${address.hash}`);
-    storeTier(value);
+    storeTier(value, true);
     return value;
   } catch {
     return null;
@@ -148,6 +158,7 @@ export async function resolveInitialTier(): Promise<AiModelTier> {
 
   const bundle = await loadBundleModel();
   const stored = readStoredTier();
+  const userChosen = hasStoredTierChoice();
 
   if (bundle) {
     let previousStamp: string | null = null;
@@ -158,25 +169,61 @@ export async function resolveInitialTier(): Promise<AiModelTier> {
     }
     const stamp = bundleStamp(bundle);
     if (previousStamp !== stamp) {
-      storeTier(bundle.model);
       try {
         window.localStorage.setItem(STORED_BUNDLE_KEY, stamp);
       } catch {
         // Ignore.
       }
-      return bundle.model;
+      // A model the crew member picked in setup or Settings wins over the
+      // model that was bundled on the download page.
+      if (!userChosen) {
+        storeTier(bundle.model);
+        return bundle.model;
+      }
     }
   }
 
+  if (stored && userChosen) return stored;
   return stored ?? bundle?.model ?? 'none';
 }
 
-export function recommendedTier(ramGb: number, webGpu: boolean): AiModelTier {
+/**
+ * A conservative suggestion based on the memory report and the graphics
+ * adapter. Chromium caps deviceMemory at 8, so an integrated laptop with
+ * 8 GB should get the smallest model rather than the largest one.
+ */
+export function recommendedTier(ramGb: number, webGpu: boolean, gpuLabel = ''): AiModelTier {
   if (!webGpu) return 'none';
-  if (ramGb >= 8) return 'phi3';
-  if (ramGb >= 4) return 'llama3';
-  if (ramGb >= 2) return 'gemma2';
+
+  const gpu = gpuLabel.toLowerCase();
+  const discrete = /nvidia|geforce|rtx|quadro|radeon|amd|arc|discrete/.test(gpu);
+
+  if (ramGb >= 16 && discrete) return 'phi3';
+  if (ramGb >= 16) return 'llama3';
+  if (ramGb >= 8 && discrete) return 'llama3';
+  if (ramGb >= 4) return 'gemma2';
   return 'none';
+}
+
+export function recommendationReason(
+  ramGb: number,
+  webGpu: boolean,
+  gpuLabel = '',
+  tier: AiModelTier = recommendedTier(ramGb, webGpu, gpuLabel)
+): string {
+  if (!webGpu) {
+    return 'This browser does not expose WebGPU, so the on-device model cannot run here. The written NASA rules still work.';
+  }
+  if (tier === 'none') {
+    return `This device reports ${ramGb} GB of memory, which is below the safe minimum for a local model. Use the written NASA rules.`;
+  }
+  if (tier === 'gemma2') {
+    return `The smallest model is the safest fit for ${ramGb} GB of memory${gpuLabel ? ` and ${gpuLabel}` : ''}.`;
+  }
+  if (tier === 'llama3') {
+    return `This device has enough memory${gpuLabel ? ` and a capable ${gpuLabel}` : ''} for the balanced 3B model.`;
+  }
+  return 'This device has enough memory and graphics power for the strongest model.';
 }
 
 export function buildFlightSurgeonMessages(payload: {

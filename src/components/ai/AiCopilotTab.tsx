@@ -1,18 +1,31 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Activity,
+  Cpu,
   Flame,
   HeartPulse,
   Loader2,
   LucideIcon,
   Radiation,
   Send,
-  Wind
+  Wind,
+  X
 } from 'lucide-react';
 import { ChatMessage } from '../../types/telemetry';
 import { NASA_SYMPTOM_PROTOCOLS, SymptomRuleCard } from '../../services/nasaRules';
-import { buildRulesAnswer, modelName, streamRulesAnswer } from '../../services/aiModels';
-import { askFlightSurgeon, isModelReady, prepareModel } from '../../services/flightSurgeon';
+import {
+  buildRulesAnswer,
+  modelName,
+  recommendationReason,
+  streamRulesAnswer
+} from '../../services/aiModels';
+import {
+  askFlightSurgeon,
+  cancelModelLoad,
+  isModelLoadCancelled,
+  isModelReady,
+  prepareModel
+} from '../../services/flightSurgeon';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { InfoTip } from '../ui/InfoTip';
 
@@ -76,12 +89,12 @@ function RichLine({ text }: { text: string }) {
 
 function RichText({ text }: { text: string }) {
   return (
-    <div className="space-y-1.5 text-[13px] leading-5 text-ink-300">
+    <div className="space-y-1.5 text-[14px] leading-5 text-ink-300">
       {text.split('\n').map((line, index) => {
         if (!line.trim()) return <div key={index} className="h-2" />;
         if (line.startsWith('### ')) {
           return (
-            <h4 key={index} className="pt-2 text-[13px] font-medium text-ink-100 first:pt-0">
+            <h4 key={index} className="pt-2 text-[14px] font-medium text-ink-100 first:pt-0">
               {line.replace(/^###\s*/, '').replace(/[#*]/g, '')}
             </h4>
           );
@@ -107,13 +120,15 @@ function RichText({ text }: { text: string }) {
 }
 
 export const AiCopilotTab: React.FC = () => {
-  const { vitals, profile, aiModelTier } = useTelemetry();
+  const { vitals, profile, aiModelTier, setAiModelTier, diagnostic, runHardwareDiagnostic } = useTelemetry();
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [prepareProgress, setPrepareProgress] = useState(0);
   const [prepareText, setPrepareText] = useState('');
   const [prepareError, setPrepareError] = useState<string | null>(null);
+  const [prepareNotice, setPrepareNotice] = useState('');
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const [modelReady, setModelReady] = useState(() => isModelReady(aiModelTier));
   const [messages, setMessages] = useState<UiMessage[]>([
     {
@@ -133,6 +148,7 @@ export const AiCopilotTab: React.FC = () => {
     setPrepareError(null);
     setPrepareText('');
     setPrepareProgress(0);
+    setPrepareNotice('');
   }, [aiModelTier]);
 
   useEffect(() => {
@@ -173,6 +189,7 @@ export const AiCopilotTab: React.FC = () => {
     }
     setPreparing(true);
     setPrepareError(null);
+    setPrepareNotice('');
     setPrepareProgress(0);
     setPrepareText('Starting');
     try {
@@ -185,6 +202,12 @@ export const AiCopilotTab: React.FC = () => {
       setPrepareText('Ready');
       return true;
     } catch (error) {
+      if (isModelLoadCancelled(error)) {
+        setPrepareError(null);
+        setPrepareNotice('Download cancelled. The written NASA rules are available.');
+        setModelReady(false);
+        return false;
+      }
       console.warn('The on-device model could not start.', error);
       setPrepareError(
         'The model could not start on this device. The written NASA rules are being used instead.'
@@ -194,6 +217,20 @@ export const AiCopilotTab: React.FC = () => {
     } finally {
       setPreparing(false);
     }
+  };
+
+  const cancelPreparation = () => {
+    cancelModelLoad();
+    setPreparing(false);
+    setPrepareError(null);
+    setPrepareText('');
+    setPrepareNotice('Download cancelled. The written NASA rules are available.');
+  };
+
+  const downloadNow = async () => {
+    if (aiModelTier === 'none' || preparing) return;
+    const ready = await ensureModel();
+    if (ready) setPrepareNotice('Model ready on this device.');
   };
 
   const streamRules = async (replyId: string, query: string, protocol?: SymptomRuleCard) => {
@@ -322,43 +359,133 @@ export const AiCopilotTab: React.FC = () => {
           ? 'NASA action card'
           : 'Flight console';
 
+  const suggested = diagnostic.recommendedModel;
+  const checkingDevice = diagnostic.gpuTier === 'Checking this device';
+  const showSuggestion =
+    !suggestionDismissed &&
+    !checkingDevice &&
+    suggested !== 'none' &&
+    (rulesMode || (!modelReady && !preparing && aiModelTier !== suggested));
+
   return (
     <div className="flex min-h-[70vh] flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-2 text-[15px] font-medium text-ink-100">
+          <h2 className="flex items-center gap-2 text-[18px] font-medium text-ink-100">
             Flight surgeon
             <InfoTip
               text="The assistant runs entirely in this browser. With AI selected, the model downloads once on first use and is then cached for offline use. The written NASA rules always work without it."
               label="Flight surgeon"
             />
           </h2>
-          <p className="mt-1 max-w-xl text-[12px] leading-5 text-ink-400">{subtitle}</p>
+          <p className="mt-1 max-w-xl text-[13px] leading-5 text-ink-400">{subtitle}</p>
         </div>
-        <p className="flex items-center gap-1.5 text-[11px] text-ink-400">
-          <span className={`h-1.5 w-1.5 rounded-full ${modelState.dot}`} />
-          {modelState.label}
-        </p>
+        <div className="flex flex-col items-end gap-1.5">
+          <p className="flex items-center gap-1.5 text-[12px] text-ink-400">
+            <span className={`h-1.5 w-1.5 rounded-full ${modelState.dot}`} />
+            {modelState.label}
+          </p>
+          {!rulesMode && !modelReady && !preparing && (
+            <button
+              type="button"
+              onClick={() => void downloadNow()}
+              className="flex h-9 items-center rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
+            >
+              Download now
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2 text-[11px] text-ink-400">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2 text-[12px] text-ink-400">
         <span className="flex items-center gap-1.5 text-ink-300">
           <span className="h-1.5 w-1.5 rounded-full bg-positive" />
           Live readings
         </span>
         <span className="font-mono tabular-nums">HR {vitals.heartRate} BPM</span>
         <span className="font-mono tabular-nums">SpO2 {vitals.spO2}%</span>
-        <span className="font-mono tabular-nums">{vitals.bodyTemp.toFixed(1)}°C</span>
+        <span className="font-mono tabular-nums">Temp {vitals.bodyTemp.toFixed(1)}°C</span>
         <span className="font-mono tabular-nums">GSR {vitals.gsrStress.toFixed(1)} µS</span>
         <span className="font-mono tabular-nums">Rad {vitals.radiationDoseRate.toFixed(2)} mSv/hr</span>
-        <span className="text-ink-500">{vitals.source === 'sensor' ? 'From the sensor' : 'Practice readings'}</span>
+        <span className="text-ink-400">{vitals.source === 'sensor' ? 'From the sensor' : 'Practice readings'}</span>
       </div>
+
+      {showSuggestion && (
+        <div className="rounded-lg border border-signal/25 bg-signal/[0.04] px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <Cpu className="mt-0.5 h-4 w-4 shrink-0 text-signal-strong" strokeWidth={1.5} />
+              <div>
+                <p className="text-[14px] font-medium text-ink-100">
+                  {rulesMode
+                    ? 'This device can run an on-device assistant'
+                    : `Suggested for this device: ${modelName(suggested)}`}
+                </p>
+                <p className="mt-1 max-w-xl text-[13px] leading-5 text-ink-400">
+                  {recommendationReason(
+                    diagnostic.estimatedRamGb,
+                    diagnostic.webGpu,
+                    diagnostic.gpuTier,
+                    suggested
+                  )}
+                  {rulesMode ? ' The written NASA rules are active until you switch.' : ''}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAiModelTier(suggested);
+                  setPrepareNotice('');
+                }}
+                className="flex h-9 items-center rounded-lg border border-signal/30 bg-signal/[0.08] px-3 text-[12px] font-medium text-signal-strong transition-colors hover:bg-signal/[0.14]"
+              >
+                Use {modelName(suggested)}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSuggestionDismissed(true)}
+                className="flex h-9 items-center rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12px] font-medium text-ink-400 transition-colors hover:border-white/15 hover:text-ink-200"
+              >
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!checkingDevice && diagnostic.recommendedModel === 'none' && (
+        <div className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-3">
+          <p className="text-[12px] leading-5 text-ink-400">
+            This browser cannot run the on-device model. The written NASA rules are active and need
+            no download.
+          </p>
+          <button
+            type="button"
+            onClick={() => void runHardwareDiagnostic()}
+            className="mt-2 flex h-9 items-center rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
+          >
+            Check again
+          </button>
+        </div>
+      )}
 
       {preparing && (
         <div className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-medium text-caution">Downloading {tierName} for the first time</p>
-            <p className="font-mono text-[10.5px] text-ink-500">{Math.round(prepareProgress * 100)}%</p>
+            <p className="text-[12px] font-medium text-caution">Downloading {tierName} for the first time</p>
+            <div className="flex items-center gap-2">
+              <p className="font-mono text-[11.5px] text-ink-500">{Math.round(prepareProgress * 100)}%</p>
+              <button
+                type="button"
+                onClick={cancelPreparation}
+                className="flex items-center gap-1 rounded-md border border-caution/30 px-2 py-1 text-[11.5px] font-medium text-caution transition-colors hover:bg-caution/[0.08]"
+              >
+                <X className="h-3 w-3" strokeWidth={1.8} />
+                Cancel
+              </button>
+            </div>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-space-800">
             <div
@@ -366,13 +493,19 @@ export const AiCopilotTab: React.FC = () => {
               style={{ width: `${Math.max(3, Math.round(prepareProgress * 100))}%` }}
             />
           </div>
-          <p className="mt-1.5 truncate text-[10.5px] text-ink-500">{prepareText}</p>
+          <p className="mt-1.5 truncate text-[11.5px] text-ink-500">{prepareText}</p>
         </div>
       )}
 
       {prepareError && !preparing && (
-        <p className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-2.5 text-[11px] leading-5 text-caution">
+        <p className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-2.5 text-[12px] leading-5 text-caution">
           {prepareError}
+        </p>
+      )}
+
+      {prepareNotice && !preparing && !prepareError && (
+        <p className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-2.5 text-[12px] leading-5 text-ink-400">
+          {prepareNotice}
         </p>
       )}
 
@@ -385,7 +518,7 @@ export const AiCopilotTab: React.FC = () => {
               type="button"
               disabled={busy || preparing}
               onClick={() => onQuickSymptom(symptom.id)}
-              className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12px] text-ink-300 transition-colors hover:border-white/15 hover:bg-space-850 hover:text-ink-100 disabled:opacity-40"
+              className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[13px] text-ink-300 transition-colors hover:border-white/15 hover:bg-space-850 hover:text-ink-100 disabled:opacity-40"
             >
               <Icon className="h-4 w-4 text-ink-500" strokeWidth={1.5} />
               {symptom.label}
@@ -408,30 +541,30 @@ export const AiCopilotTab: React.FC = () => {
               }`}
             >
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-[11px] font-medium text-ink-300">{roleLabel(message)}</span>
-                <span className="text-[10.5px] tabular-nums text-ink-500">{formatTime(message.timestamp)}</span>
+                <span className="text-[12px] font-medium text-ink-300">{roleLabel(message)}</span>
+                <span className="text-[11.5px] tabular-nums text-ink-500">{formatTime(message.timestamp)}</span>
                 {message.protocolBadge && (
-                  <span className="ml-auto font-mono text-[10px] text-ink-500">{message.protocolBadge}</span>
+                  <span className="ml-auto font-mono text-[11px] text-ink-500">{message.protocolBadge}</span>
                 )}
               </div>
 
               <div className="mt-2">
                 {message.actionCard ? (
                   <div>
-                    <p className="text-[13px] font-medium text-ink-100">{message.actionCard.name}</p>
+                    <p className="text-[14px] font-medium text-ink-100">{message.actionCard.name}</p>
                     {message.actionCard.description && (
-                      <p className="mt-0.5 text-[12px] leading-5 text-ink-500">{message.actionCard.description}</p>
+                      <p className="mt-0.5 text-[13px] leading-5 text-ink-500">{message.actionCard.description}</p>
                     )}
                     <div
                       className={`mt-3 border-l-2 pl-3 ${
                         crimson ? 'border-critical/50' : 'border-caution/50'
                       }`}
                     >
-                      <p className={`text-[10.5px] ${crimson ? 'text-critical' : 'text-caution'}`}>
+                      <p className={`text-[11.5px] ${crimson ? 'text-critical' : 'text-caution'}`}>
                         {formatStatus(message.actionCard.status)}
                       </p>
-                      <p className="mt-1 text-[13px] leading-5 text-ink-200">{message.actionCard.diagnosis}</p>
-                      <ol className="mt-2 space-y-1 text-[13px] leading-5 text-ink-300">
+                      <p className="mt-1 text-[14px] leading-5 text-ink-200">{message.actionCard.diagnosis}</p>
+                      <ol className="mt-2 space-y-1 text-[14px] leading-5 text-ink-300">
                         {message.actionCard.steps.map((step) => (
                           <li key={step} className="flex gap-2">
                             <span className="select-none text-ink-500">–</span>
@@ -440,17 +573,17 @@ export const AiCopilotTab: React.FC = () => {
                         ))}
                       </ol>
                     </div>
-                    <p className="mt-2 font-mono text-[10px] text-ink-500">{message.actionCard.nasaCode}</p>
+                    <p className="mt-2 font-mono text-[11px] text-ink-500">{message.actionCard.nasaCode}</p>
                   </div>
                 ) : message.sender === 'astronaut' ? (
-                  <p className="whitespace-pre-wrap text-[13px] leading-5 text-ink-100">{message.text}</p>
+                  <p className="whitespace-pre-wrap text-[14px] leading-5 text-ink-100">{message.text}</p>
                 ) : (
                   <RichText text={message.text || (message.isStreaming ? '…' : '')} />
                 )}
               </div>
 
               {message.sender === 'astronaut' && message.vitalsSnapshot && (
-                <p className="mt-2 font-mono text-[10px] text-ink-500">
+                <p className="mt-2 font-mono text-[11px] text-ink-500">
                   Snapshot HR {message.vitalsSnapshot.heartRate} · SpO2 {message.vitalsSnapshot.spO2}% ·{' '}
                   {message.vitalsSnapshot.bodyTemp.toFixed(1)}°C · GSR {message.vitalsSnapshot.gsrStress.toFixed(1)} ·
                   Rad {message.vitalsSnapshot.radiationDoseRate.toFixed(2)}
@@ -478,19 +611,19 @@ export const AiCopilotTab: React.FC = () => {
               : `Ask ${tierName}, or use a card above`
           }
           aria-label="Symptom report"
-          className="h-9 min-w-0 flex-1 bg-transparent text-[13px] text-ink-100 outline-none placeholder:text-ink-500"
+          className="h-10 min-w-0 flex-1 bg-transparent text-[14px] text-ink-100 outline-none placeholder:text-ink-500"
         />
         <button
           type="submit"
           disabled={busy || preparing || !draft.trim()}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-100 text-space-950 transition-colors hover:bg-white disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-chalk text-space-950 transition-colors hover:brightness-105 disabled:opacity-40"
           aria-label="Send to the flight surgeon"
         >
           <Send className="h-4 w-4" strokeWidth={1.5} />
         </button>
       </form>
 
-      <p className="text-[10.5px] leading-5 text-ink-500">
+      <p className="text-[11.5px] leading-5 text-ink-500">
         Training simulation only. It does not replace a real flight surgeon or mission medical rules.
       </p>
     </div>

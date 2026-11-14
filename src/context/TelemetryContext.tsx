@@ -14,13 +14,8 @@ import { evaluateBiometrics, RuleEvaluationResult } from '../services/nasaRules'
 import { audioSynth } from '../services/audioSynth';
 import { crewLink } from '../services/crewLink';
 import { showAlertNotification } from '../services/notifications';
-import {
-  loadBundleModel,
-  recommendedTier,
-  resolveInitialTier,
-  storeTier
-} from '../services/aiModels';
-import { hasWebGpu } from '../services/flightSurgeon';
+import { loadBundleModel, resolveInitialTier, storeTier } from '../services/aiModels';
+import { assessDevice } from '../services/deviceCheck';
 import { saveProfile } from '../services/profileStore';
 
 interface TelemetryContextType {
@@ -149,42 +144,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   );
 
   const runHardwareDiagnostic = useCallback(async (): Promise<SystemDiagnostic> => {
-    const nav = navigator as unknown as {
-      deviceMemory?: number;
-      hardwareConcurrency?: number;
-      gpu?: { requestAdapter: () => Promise<{ info?: { vendor?: string; architecture?: string } } | null> };
-    };
-    const ram = nav.deviceMemory ?? 8;
-    const cores = nav.hardwareConcurrency ?? 4;
-    let storageGb = 32;
-    if (navigator.storage?.estimate) {
-      try {
-        const estimate = await navigator.storage.estimate();
-        if (estimate.quota) storageGb = Math.round(estimate.quota / (1024 * 1024 * 1024));
-      } catch {
-        // Keep the default.
-      }
-    }
-
-    const webGpu = await hasWebGpu();
-    let gpuTier = webGpu ? 'WebGPU ready' : 'WebGPU not available';
-    if (webGpu && nav.gpu) {
-      try {
-        const adapter = await nav.gpu.requestAdapter();
-        if (adapter?.info?.vendor) gpuTier = `WebGPU · ${adapter.info.vendor}`;
-      } catch {
-        // The simple label is enough.
-      }
-    }
-
-    const next: SystemDiagnostic = {
-      estimatedRamGb: ram,
-      cpuCores: cores,
-      availableStorageGb: storageGb,
-      gpuTier,
-      webGpu,
-      recommendedModel: recommendedTier(ram, webGpu)
-    };
+    const next = await assessDevice();
     setDiagnostic(next);
     return next;
   }, []);
@@ -207,7 +167,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
 
   const setAiModelTier = useCallback((tier: AiModelTier) => {
     setAiModelTierState(tier);
-    storeTier(tier);
+    storeTier(tier, true);
   }, []);
 
   // Crew link connection state.

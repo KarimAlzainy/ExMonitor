@@ -68,19 +68,19 @@ export const GuideTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
-        <h1 className="flex items-center gap-2 text-[15px] font-medium text-ink-100">
+        <h1 className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
           <BookOpen className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
           How it works
         </h1>
-        <p className="mt-1 max-w-2xl text-[12px] leading-5 text-ink-400">
+        <p className="mt-1 max-w-2xl text-[13px] leading-5 text-ink-400">
           A short guide to the console, the sensor page and the crew link.
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-white/[0.06] py-3 text-[11px] text-ink-400">
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-white/[0.06] py-3 text-[12px] text-ink-400">
           <span className="flex items-center gap-1.5">
             <span className={`h-1.5 w-1.5 rounded-full ${statusTone.dot}`} />
             <span className={statusTone.text}>{ruleResult.hazardTitle}</span>
-            <span className="font-mono text-[10px] text-ink-500">{ruleResult.nasaRef}</span>
+            <span className="font-mono text-[11px] text-ink-500">{ruleResult.nasaRef}</span>
           </span>
           <span>{sensorText}</span>
           <span>{linkText}</span>
@@ -92,39 +92,39 @@ export const GuideTab: React.FC = () => {
               key={hazard.name}
               className="grid gap-1 py-3 sm:grid-cols-[28px_170px_minmax(0,1fr)] sm:items-baseline sm:gap-4"
             >
-              <span className="font-mono text-[10.5px] tabular-nums text-ink-500">
+              <span className="font-mono text-[11.5px] tabular-nums text-ink-500">
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <span className="text-[13px] font-medium text-ink-100">{hazard.name}</span>
-              <span className="text-[13px] leading-5 text-ink-300">{hazard.detail}</span>
+              <span className="text-[14px] font-medium text-ink-100">{hazard.name}</span>
+              <span className="text-[14px] leading-5 text-ink-300">{hazard.detail}</span>
             </li>
           ))}
         </ul>
       </section>
 
       <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
-        <h2 className="flex items-center gap-2 text-[15px] font-medium text-ink-100">
+        <h2 className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
           A walkthrough
           <InfoTip
             text="The sensor page is a separate page in the same download. It does not need special hardware; it creates realistic readings so the console can be shown anywhere."
             label="Walkthrough"
           />
         </h2>
-        <p className="mt-1 text-[12px] text-ink-400">From an empty screen to a crew alert in six steps.</p>
+        <p className="mt-1 text-[13px] text-ink-400">From an empty screen to a crew alert in six steps.</p>
         <ol className="mt-4 space-y-3">
           {STEPS.map((step, index) => (
             <li key={step} className="flex gap-3">
-              <span className="w-5 shrink-0 font-mono text-[10.5px] leading-5 tabular-nums text-ink-500">
+              <span className="w-5 shrink-0 font-mono text-[11.5px] leading-5 tabular-nums text-ink-500">
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <span className="text-[13px] leading-5 text-ink-300">{step}</span>
+              <span className="text-[14px] leading-5 text-ink-300">{step}</span>
             </li>
           ))}
         </ol>
       </section>
 
       <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
-        <h2 className="text-[15px] font-medium text-ink-100">What runs where</h2>
+        <h2 className="text-[16px] font-medium text-ink-100">What runs where</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <Piece
             icon={Cpu}
@@ -142,7 +142,7 @@ export const GuideTab: React.FC = () => {
             text="Passes alerts and sensor frames between devices on the same network. Start the relay or the packaged launcher."
           />
         </div>
-        <p className="mt-4 text-[11px] leading-5 text-ink-500">
+        <p className="mt-4 text-[12px] leading-5 text-ink-500">
           No account is needed. Your name, label and settings stay in this browser. Sensor codes are just names,
           not passwords, so keep the console on a network you trust.
         </p>
@@ -162,11 +162,11 @@ function Piece({
 }) {
   return (
     <div className="rounded-lg border border-white/[0.06] bg-space-950 p-3">
-      <p className="flex items-center gap-2 text-[12px] font-medium text-ink-200">
+      <p className="flex items-center gap-2 text-[13px] font-medium text-ink-200">
         <Icon className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
         {title}
       </p>
-      <p className="mt-1.5 text-[11px] leading-5 text-ink-500">{text}</p>
+      <p className="mt-1.5 text-[12px] leading-5 text-ink-500">{text}</p>
     </div>
   );
 }

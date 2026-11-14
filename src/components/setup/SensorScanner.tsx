@@ -162,12 +162,12 @@ export const SensorScanner: React.FC<SensorScannerProps> = ({ open, onClose, onC
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Camera className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
-            <h3 className="text-[15px] font-medium text-ink-100">Scan the sensor code</h3>
+            <h3 className="text-[16px] font-medium text-ink-100">Scan the sensor code</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-space-850 hover:text-ink-100"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-space-850 hover:text-ink-100"
             aria-label="Close the scanner"
           >
             <X className="h-4 w-4" strokeWidth={1.5} />
@@ -183,11 +183,11 @@ export const SensorScanner: React.FC<SensorScannerProps> = ({ open, onClose, onC
           />
         </div>
 
-        <p className="mt-3 text-[12px] leading-5 text-ink-300">{status}</p>
-        {cameraError && <p className="mt-1 text-[11px] leading-5 text-caution">{cameraError}</p>}
+        <p className="mt-3 text-[13px] leading-5 text-ink-300">{status}</p>
+        {cameraError && <p className="mt-1 text-[12px] leading-5 text-caution">{cameraError}</p>}
 
         <div className="mt-4 rounded-lg border border-white/[0.06] bg-space-950 p-3">
-          <label className="block text-[11px] text-ink-500" htmlFor="sensor-code">
+          <label className="block text-[12px] text-ink-500" htmlFor="sensor-code">
             Sensor code
           </label>
           <div className="mt-1 flex gap-2">
@@ -199,19 +199,19 @@ export const SensorScanner: React.FC<SensorScannerProps> = ({ open, onClose, onC
                 setManualError(null);
               }}
               placeholder="SENSOR-AB12"
-              className="h-10 min-w-0 flex-1 rounded-lg border border-white/[0.08] bg-space-900 px-3 font-mono text-[13px] uppercase text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
+              className="h-10 min-w-0 flex-1 rounded-lg border border-white/[0.08] bg-space-900 px-3 font-mono text-[14px] uppercase text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
             />
             <button
               type="button"
               onClick={() => accept(manual)}
               disabled={!manual.trim()}
-              className="flex h-10 items-center gap-1.5 rounded-lg bg-ink-100 px-3 text-[12px] font-medium text-space-950 transition-colors hover:bg-white disabled:opacity-40"
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-chalk px-3 text-[13px] font-medium text-space-950 transition-colors hover:brightness-105 disabled:opacity-40"
             >
               <QrCode className="h-4 w-4" strokeWidth={1.5} />
               Use code
             </button>
           </div>
-          {manualError && <p className="mt-2 text-[11px] leading-5 text-caution">{manualError}</p>}
+          {manualError && <p className="mt-2 text-[12px] leading-5 text-caution">{manualError}</p>}
         </div>
       </div>
     </div>

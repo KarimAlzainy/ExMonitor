@@ -27,7 +27,7 @@ export const RadiationHazardBadge: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <Radiation className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
-            <h2 className="flex items-center text-[15px] font-medium text-ink-100">
+            <h2 className="flex items-center text-[16px] font-medium text-ink-100">
               Radiation
               <InfoTip
                 text="Dose rate is the radiation arriving right now. Total dose adds up over the mission. The caution line is 0.30 and the critical line is 1.00 millisieverts per hour."
@@ -35,9 +35,9 @@ export const RadiationHazardBadge: React.FC = () => {
               />
             </h2>
           </div>
-          <p className="mt-1 text-[11px] text-ink-500">Suit dosimeter · NASA MR092L reference</p>
+          <p className="mt-1 text-[12px] text-ink-400">Suit dosimeter · NASA MR092L reference</p>
         </div>
-        <span className={`flex shrink-0 items-center gap-1.5 pt-0.5 text-[11px] ${tone.text}`}>
+        <span className={`flex shrink-0 items-center gap-1.5 rounded-full bg-space-950 px-2 py-0.5 text-[12px] font-medium ${tone.text}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
           {statusLabel}
         </span>
@@ -46,17 +46,17 @@ export const RadiationHazardBadge: React.FC = () => {
       <div className="mt-5 space-y-5">
         <div>
           <div className="flex items-baseline justify-between gap-2">
-            <span className="flex items-center text-[11px] text-ink-400">
+            <span className="flex items-center text-[12px] text-ink-400">
               Dose rate
               <InfoTip text="How much radiation reaches the body each hour. Milli-sieverts (mSv) are the unit." />
             </span>
-            <span className="text-[11px] text-ink-500">{Math.round(dosePercent)}% of the limit</span>
+            <span className="text-[12px] text-ink-400">{Math.round(dosePercent)}% of the limit</span>
           </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
-            <span className={`text-2xl font-medium leading-none tabular-nums ${isCritical ? 'text-critical' : isCaution ? 'text-caution' : 'text-ink-100'}`}>
+            <span className={`text-[30px] font-medium leading-none tabular-nums ${isCritical ? 'text-critical' : isCaution ? 'text-caution' : 'text-ink-100'}`}>
               {radiationDoseRate.toFixed(2)}
             </span>
-            <span className="text-xs text-ink-400">mSv/hr</span>
+            <span className="text-[13px] text-ink-400">mSv/hr</span>
           </div>
           <div className="relative mt-3 h-1.5 rounded-full bg-space-800">
             <div
@@ -66,25 +66,25 @@ export const RadiationHazardBadge: React.FC = () => {
             <span className="absolute left-[30%] top-1/2 h-2.5 w-px -translate-y-1/2 bg-white/15" />
           </div>
           <div className="relative mt-1 h-4">
-            <span className="absolute left-0 font-mono text-[10px] text-ink-500">0</span>
-            <span className="absolute left-[30%] -translate-x-1/2 font-mono text-[10px] text-ink-500">0.30</span>
-            <span className="absolute right-0 font-mono text-[10px] text-ink-500">1.00</span>
+            <span className="absolute left-0 font-mono text-[11px] text-ink-400">0</span>
+            <span className="absolute left-[30%] -translate-x-1/2 font-mono text-[11px] text-ink-400">0.30</span>
+            <span className="absolute right-0 font-mono text-[11px] text-ink-400">1.00</span>
           </div>
         </div>
 
         <div>
           <div className="flex items-baseline justify-between gap-2">
-            <span className="flex items-center text-[11px] text-ink-400">
+            <span className="flex items-center text-[12px] text-ink-400">
               Total mission dose
               <InfoTip text="The running total since the mission started. The 30-day guidance limit shown here is 25 milli-sieverts." />
             </span>
-            <span className="text-[11px] text-ink-500">30-day guide 25 mSv</span>
+            <span className="text-[12px] text-ink-400">30-day guide 25 mSv</span>
           </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
-            <span className="text-2xl font-medium leading-none tabular-nums text-ink-100">
+            <span className="text-[30px] font-medium leading-none tabular-nums text-ink-100">
               {cumulativeRadiation.toFixed(2)}
             </span>
-            <span className="text-xs text-ink-400">mSv</span>
+            <span className="text-[13px] text-ink-400">mSv</span>
           </div>
           <div className="mt-3 h-1.5 rounded-full bg-space-800">
             <div
@@ -92,7 +92,7 @@ export const RadiationHazardBadge: React.FC = () => {
               style={{ width: `${Math.max(2, cumulativePercent)}%` }}
             />
           </div>
-          <div className="mt-1.5 flex justify-between font-mono text-[10px] text-ink-500">
+          <div className="mt-1.5 flex justify-between font-mono text-[11px] text-ink-400">
             <span>0</span>
             <span>25 mSv</span>
           </div>
@@ -102,17 +102,17 @@ export const RadiationHazardBadge: React.FC = () => {
       <div className="mt-auto border-t border-white/[0.06] pt-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] text-ink-500">Where to shelter</p>
-            <p className={`mt-1 text-[13px] font-medium ${isCritical ? 'text-critical' : 'text-ink-200'}`}>
+            <p className="text-[12px] text-ink-400">Where to shelter</p>
+            <p className={`mt-1 text-[14px] font-medium ${isCritical ? 'text-critical' : 'text-ink-200'}`}>
               {isCritical ? 'Storm shelter' : 'Habitat'}
             </p>
           </div>
           <div className="text-right">
-            <p className="flex items-center justify-end text-[11px] text-ink-500">
+            <p className="flex items-center justify-end text-[12px] text-ink-400">
               Water shielding
               <InfoTip text="A layer of water absorbs radiation. The thicker the layer, the safer the shelter." />
             </p>
-            <p className="mt-1 text-[13px] font-medium tabular-nums text-ink-200">14 g/cm²</p>
+            <p className="mt-1 text-[14px] font-medium tabular-nums text-ink-200">14 g/cm²</p>
           </div>
         </div>
       </div>

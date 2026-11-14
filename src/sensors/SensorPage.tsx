@@ -291,22 +291,22 @@ export const SensorPage: React.FC = () => {
       <header className="border-b border-white/[0.08]">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-space-900 text-ink-300">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.08] bg-space-900 text-ink-300">
               <Radio className="h-4 w-4" strokeWidth={1.6} />
             </span>
             <div>
-              <p className="text-[14px] font-semibold leading-5 tracking-tight text-ink-100">Ex-Monitor sensors</p>
-              <p className="text-[11px] leading-4 text-ink-500">Pretend body sensor · realistic readings</p>
+              <p className="text-[15px] font-semibold leading-5 tracking-tight text-ink-100">Ex-Monitor sensors</p>
+              <p className="text-[12px] leading-4 text-ink-500">Pretend body sensor · realistic readings</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-[11px] text-ink-400" title="How this page reaches other devices">
+            <span className="flex items-center gap-1.5 text-[12px] text-ink-400" title="How this page reaches other devices">
               <span className={`h-1.5 w-1.5 rounded-full ${linkDot}`} />
               {linkText}
             </span>
             <a
               href="./"
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15"
+              className="flex h-10 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[13px] font-medium text-ink-200 transition-colors hover:border-white/15"
             >
               <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.6} />
               Open the console
@@ -320,29 +320,29 @@ export const SensorPage: React.FC = () => {
           <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[12px] font-medium text-ink-200">Pairing code</p>
-                <p className="mt-0.5 text-[11px] leading-4 text-ink-500">
+                <p className="text-[13px] font-medium text-ink-200">Pairing code</p>
+                <p className="mt-0.5 text-[12px] leading-4 text-ink-500">
                   Scan this in the console under Settings.
                 </p>
               </div>
               <QrCode className="h-4 w-4 text-ink-500" strokeWidth={1.5} />
             </div>
 
-            <div className="mt-4 flex justify-center rounded-lg border border-white/[0.06] bg-ink-100 p-3">
+            <div className="mt-4 flex justify-center rounded-lg border border-white/[0.06] bg-chalk p-3">
               {qr ? (
                 <img src={qr} alt={`Sensor code ${sensorId}`} className="h-48 w-48" />
               ) : qrFailed ? (
-                <div className="flex h-48 w-48 items-center justify-center text-center text-[11px] text-space-700">
+                <div className="flex h-48 w-48 items-center justify-center text-center text-[12px] text-space-700">
                   The code image could not be drawn. Type the sensor code instead.
                 </div>
               ) : (
-                <div className="flex h-48 w-48 items-center justify-center text-center text-[11px] text-space-700">
+                <div className="flex h-48 w-48 items-center justify-center text-center text-[12px] text-space-700">
                   Drawing the code…
                 </div>
               )}
             </div>
 
-            <p className="mt-3 text-center font-mono text-[15px] font-medium tracking-wide text-ink-100">
+            <p className="mt-3 text-center font-mono text-[16px] font-medium tracking-wide text-ink-100">
               {sensorId}
             </p>
 
@@ -350,7 +350,7 @@ export const SensorPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => void copyUrl()}
-                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-850 text-[11.5px] font-medium text-ink-200 transition-colors hover:border-white/15"
+                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-850 text-[12.5px] font-medium text-ink-200 transition-colors hover:border-white/15"
               >
                 {copied ? <Check className="h-3.5 w-3.5 text-positive" strokeWidth={2} /> : <Copy className="h-3.5 w-3.5" strokeWidth={1.6} />}
                 {copied ? 'Copied' : 'Copy link'}
@@ -358,7 +358,7 @@ export const SensorPage: React.FC = () => {
               <button
                 type="button"
                 onClick={newCode}
-                className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[11.5px] font-medium text-ink-300 transition-colors hover:border-white/15"
+                className="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[12.5px] font-medium text-ink-300 transition-colors hover:border-white/15"
               >
                 New code
               </button>
@@ -373,10 +373,10 @@ export const SensorPage: React.FC = () => {
             >
               <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${paired ? 'bg-positive' : 'bg-caution'}`} />
               <div>
-                <p className={`text-[11.5px] font-medium ${paired ? 'text-positive' : 'text-caution'}`}>
+                <p className={`text-[12.5px] font-medium ${paired ? 'text-positive' : 'text-caution'}`}>
                   {paired ? `Paired with ${pairedWith}` : 'Waiting for a console'}
                 </p>
-                <p className="mt-0.5 text-[10.5px] leading-4 text-ink-500">
+                <p className="mt-0.5 text-[11.5px] leading-4 text-ink-500">
                   {paired
                     ? 'Readings are streaming. Keep this page open.'
                     : 'Open the console on the same Wi-Fi and scan the code.'}
@@ -386,13 +386,13 @@ export const SensorPage: React.FC = () => {
           </section>
 
           <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
-            <p className="text-[12px] font-medium text-ink-200">How to connect</p>
+            <p className="text-[13px] font-medium text-ink-200">How to connect</p>
             <ol className="mt-3 space-y-2.5">
               <Step number="1" text="Open the console on the other device on the same Wi-Fi or hotspot." />
               <Step number="2" text="Go to Settings, then Scan sensor code." />
               <Step number="3" text="Pick a situation below. Readings start immediately." />
             </ol>
-            <p className="mt-3 border-t border-white/[0.06] pt-3 text-[10.5px] leading-5 text-ink-500">
+            <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11.5px] leading-5 text-ink-500">
               The code is a name, not a password. This page sends pretend readings only; it does not read a real
               body sensor.
             </p>
@@ -403,12 +403,12 @@ export const SensorPage: React.FC = () => {
           <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h1 className="text-[15px] font-medium text-ink-100">Situation</h1>
-                <p className="mt-1 text-[12px] leading-5 text-ink-400">
+                <h1 className="text-[16px] font-medium text-ink-100">Situation</h1>
+                <p className="mt-1 text-[13px] leading-5 text-ink-400">
                   Change the story the sensor is telling. The readings move gradually, not in steps.
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-ink-500">
+              <div className="flex items-center gap-1.5 text-[12px] text-ink-500">
                 <Signal className="h-3.5 w-3.5" strokeWidth={1.6} />
                 8 frames per second
               </div>
@@ -431,11 +431,11 @@ export const SensorPage: React.FC = () => {
                         : 'border-white/[0.08] bg-space-950 hover:border-white/15'
                     }`}
                   >
-                    <span className={`flex items-center gap-1.5 text-[12px] font-medium ${active ? 'text-ink-100' : 'text-ink-200'}`}>
+                    <span className={`flex items-center gap-1.5 text-[13px] font-medium ${active ? 'text-ink-100' : 'text-ink-200'}`}>
                       <Icon className="h-3.5 w-3.5 text-ink-400" strokeWidth={1.6} />
                       {meta.name}
                     </span>
-                    <span className="mt-1 block text-[10.5px] leading-4 text-ink-500">{meta.note}</span>
+                    <span className="mt-1 block text-[11.5px] leading-4 text-ink-500">{meta.note}</span>
                   </button>
                 );
               })}
@@ -444,11 +444,11 @@ export const SensorPage: React.FC = () => {
 
           <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <h2 className="flex items-center gap-2 text-[15px] font-medium text-ink-100">
+              <h2 className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
                 <HeartPulse className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
                 Live signal preview
               </h2>
-              <p className="font-mono text-[10.5px] text-ink-500">
+              <p className="font-mono text-[11.5px] text-ink-500">
                 {live?.seq ? `Frame ${live.seq}` : 'Waiting for the first frame'} ·{' '}
                 {live ? new Date(live.sentAt).toLocaleTimeString([], { hour12: false }) : ''}
               </p>
@@ -464,7 +464,7 @@ export const SensorPage: React.FC = () => {
                 className="block h-40 w-full sm:h-44"
               />
             </div>
-            <p className="mt-1.5 text-[10.5px] text-ink-500">Heart electrical signal (ECG)</p>
+            <p className="mt-1.5 text-[11.5px] text-ink-500">Heart electrical signal (ECG)</p>
 
             <div className="mt-3 overflow-hidden rounded-lg border border-white/[0.06] bg-[#06070a]">
               <canvas
@@ -476,7 +476,7 @@ export const SensorPage: React.FC = () => {
                 className="block h-32 w-full"
               />
             </div>
-            <p className="mt-1.5 text-[10.5px] text-ink-500">Pulse wave (PPG)</p>
+            <p className="mt-1.5 text-[11.5px] text-ink-500">Pulse wave (PPG)</p>
           </section>
 
           <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -488,22 +488,22 @@ export const SensorPage: React.FC = () => {
             <Metric label="Total mission dose" value={live ? live.cumulativeRadiation.toFixed(2) : '–'} unit="mSv" />
             <Metric label="Signal quality" value={live ? String(live.signalQuality) : '–'} unit="%" />
             <div className="rounded-lg border border-white/[0.06] bg-space-900 px-4 py-3">
-              <p className="flex items-center gap-1.5 text-[10.5px] text-ink-500">
+              <p className="flex items-center gap-1.5 text-[11.5px] text-ink-500">
                 <Battery className="h-3.5 w-3.5" strokeWidth={1.6} />
                 Sensor battery
               </p>
               <p className="mt-1 flex items-baseline gap-1">
-                <span className="text-[20px] font-medium leading-none tabular-nums text-ink-100">
+                <span className="text-[22px] font-medium leading-none tabular-nums text-ink-100">
                   {live ? live.battery : '–'}
                 </span>
-                <span className="text-[11px] text-ink-400">%</span>
+                <span className="text-[12px] text-ink-400">%</span>
               </p>
             </div>
           </section>
         </div>
       </main>
 
-      <footer className="mx-auto w-full max-w-6xl px-4 pb-8 text-[10.5px] leading-5 text-ink-500 sm:px-6">
+      <footer className="mx-auto w-full max-w-6xl px-4 pb-8 text-[11.5px] leading-5 text-ink-500 sm:px-6">
         Pretend sensor data for a training simulation. It is not a medical device and does not replace real
         monitoring.
       </footer>
@@ -514,10 +514,10 @@ export const SensorPage: React.FC = () => {
 function Step({ number, text }: { number: string; text: string }) {
   return (
     <li className="flex gap-2.5">
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 font-mono text-[9px] text-ink-400">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 font-mono text-[10px] text-ink-400">
         {number}
       </span>
-      <span className="text-[11px] leading-5 text-ink-300">{text}</span>
+      <span className="text-[12px] leading-5 text-ink-300">{text}</span>
     </li>
   );
 }
@@ -525,10 +525,10 @@ function Step({ number, text }: { number: string; text: string }) {
 function Metric({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
     <div className="rounded-lg border border-white/[0.06] bg-space-900 px-4 py-3">
-      <p className="text-[10.5px] text-ink-500">{label}</p>
+      <p className="text-[11.5px] text-ink-500">{label}</p>
       <p className="mt-1 flex items-baseline gap-1">
-        <span className="text-[20px] font-medium leading-none tabular-nums text-ink-100">{value}</span>
-        <span className="text-[11px] text-ink-400">{unit}</span>
+        <span className="text-[22px] font-medium leading-none tabular-nums text-ink-100">{value}</span>
+        <span className="text-[12px] text-ink-400">{unit}</span>
       </p>
     </div>
   );

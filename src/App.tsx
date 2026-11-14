@@ -25,7 +25,7 @@ const AppShell: React.FC<{ onRunSetup: () => void }> = ({ onRunSetup }) => {
   }, [tab]);
 
   return (
-    <div className="min-h-screen bg-space-950 text-ink-100">
+    <div className="min-h-screen overflow-x-clip bg-space-950 text-ink-100">
       <Header activeTab={tab} onTabChange={setTab} />
       <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {tab === 'telemetry' && <DashboardTab />}
@@ -33,7 +33,7 @@ const AppShell: React.FC<{ onRunSetup: () => void }> = ({ onRunSetup }) => {
         {tab === 'settings' && <SettingsTab onRunSetup={onRunSetup} />}
         {tab === 'lab' && <GuideTab />}
       </main>
-      <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-8 pt-2 text-[11px] text-ink-500 sm:px-6">
+      <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-8 pt-2 text-[12px] text-ink-500 sm:px-6">
         <span>NASA Space Apps Challenge · MR092L / MEDB 5.2 · Earth delay up to 22 min</span>
         <a
           href="sensors.html"
@@ -74,13 +74,13 @@ class TelemetryErrorBoundary extends React.Component<{ children: React.ReactNode
       return (
         <div className="flex min-h-screen items-center justify-center bg-space-950 p-6">
           <div className="w-full max-w-md rounded-xl border border-critical/30 bg-space-900 p-6">
-            <p className="text-[11px] font-medium text-critical">Console fault</p>
+            <p className="text-[12px] font-medium text-critical">Console fault</p>
             <h1 className="mt-2 text-lg font-medium text-ink-100">The console hit an unexpected problem</h1>
-            <p className="mt-2 break-words font-mono text-[11px] leading-5 text-ink-400">{this.state.message}</p>
+            <p className="mt-2 break-words font-mono text-[12px] leading-5 text-ink-400">{this.state.message}</p>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mt-5 h-11 w-full rounded-lg bg-ink-100 text-sm font-medium text-space-950 transition-colors hover:bg-white"
+              className="mt-5 h-11 w-full rounded-lg bg-chalk text-sm font-medium text-space-950 transition-colors hover:brightness-105"
             >
               Reload the console
             </button>

@@ -16,9 +16,13 @@ body,
 body {
   min-height: 100dvh;
   background-color: #08090c;
-  color: #e9ecf0;
+  color: #f4f6f8;
   font-feature-settings: 'tnum' 1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
 }
 
@@ -29,13 +33,17 @@ input {
 }
 
 :focus-visible {
-  outline: 2px solid #7aa7c7;
+  outline: 2px solid #f3efe4;
   outline-offset: 2px;
 }
 
 ::selection {
   background: #26465c;
   color: #ffffff;
+}
+
+html {
+  scroll-padding-top: 5rem;
 }
 
 .scrollbar-thin {
@@ -80,7 +88,7 @@ input[type='range']::-webkit-slider-thumb {
   margin-top: -4px;
   border: 0;
   border-radius: 999px;
-  background: #e9ecf0;
+  background: #f3efe4;
 }
 
 input[type='range']::-moz-range-track {
@@ -100,7 +108,7 @@ input[type='range']::-moz-range-thumb {
   height: 12px;
   border: 0;
   border-radius: 999px;
-  background: #e9ecf0;
+  background: #f3efe4;
 }
 
 /* Keep the emergency takeover readable for users who cannot tolerate flashing. */
@@ -114,3 +122,4 @@ input[type='range']::-moz-range-thumb {
     scroll-behavior: auto !important;
   }
 }
+

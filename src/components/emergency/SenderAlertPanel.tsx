@@ -31,7 +31,7 @@ export const SenderAlertPanel: React.FC = () => {
         <div className="p-4">
           <div className="flex items-start gap-3">
             <span
-              className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
+              className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
                 cancelled
                   ? 'border-white/[0.08] bg-space-850 text-ink-400'
                   : 'border-critical/30 bg-critical/[0.08] text-critical'
@@ -46,19 +46,19 @@ export const SenderAlertPanel: React.FC = () => {
               )}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-medium text-ink-100">
+              <p className="text-[13px] font-medium text-ink-100">
                 {status === 'sending'
                   ? 'Sending your alert to the crew'
                   : cancelled
                     ? 'Alert cancelled for everyone'
                     : 'Alert sent to the crew'}
               </p>
-              <p className="mt-1 truncate text-[11px] text-ink-400">{event.title}</p>
-              <p className="mt-1 font-mono text-[10px] text-ink-500">
+              <p className="mt-1 truncate text-[12px] text-ink-400">{event.title}</p>
+              <p className="mt-1 font-mono text-[11px] text-ink-500">
                 {formatTime(event.timestamp)} · {event.id}
               </p>
               {!cancelled && (
-                <p className="mt-2 text-[11px] leading-4 text-ink-500">
+                <p className="mt-2 text-[12px] leading-4 text-ink-500">
                   {acknowledgedBy.length
                     ? `Acknowledged by ${acknowledgedBy.join(', ')}.`
                     : 'It stays on each crew screen until they acknowledge it or you cancel.'}
@@ -72,7 +72,7 @@ export const SenderAlertPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={cancelOwnAlert}
-                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-critical/35 bg-critical/[0.08] text-[12px] font-medium text-critical transition-colors hover:bg-critical/15"
+                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-critical/35 bg-critical/[0.08] text-[13px] font-medium text-critical transition-colors hover:bg-critical/15"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={1.8} />
                 Cancel alert
@@ -81,7 +81,7 @@ export const SenderAlertPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={dismissOwnAlert}
-                className="h-9 flex-1 rounded-lg border border-white/[0.08] bg-space-850 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15"
+                className="h-10 flex-1 rounded-lg border border-white/[0.08] bg-space-850 text-[13px] font-medium text-ink-200 transition-colors hover:border-white/15"
               >
                 Close
               </button>
@@ -89,13 +89,13 @@ export const SenderAlertPanel: React.FC = () => {
           </div>
 
           {!cancelled && (
-            <p className="mt-2 flex items-center gap-1.5 text-[10.5px] text-ink-500">
+            <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-ink-500">
               <Radio className="h-3 w-3" strokeWidth={1.5} />
               Sent through the crew link on this network.
             </p>
           )}
           {cancelled && (
-            <p className="mt-2 flex items-center gap-1.5 text-[10.5px] text-ink-500">
+            <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-ink-500">
               <AlertOctagon className="h-3 w-3" strokeWidth={1.5} />
               The alert was cleared on every crew screen.
             </p>

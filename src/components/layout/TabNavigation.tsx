@@ -20,7 +20,11 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({ active, onChange, 
   return (
     <nav
       aria-label="Sections"
-      className={variant === 'bar' ? 'flex items-center gap-1 overflow-x-auto' : 'flex items-center gap-1'}
+      className={
+        variant === 'bar'
+          ? 'scrollbar-thin flex w-full items-center gap-1.5 overflow-x-auto pb-0.5'
+          : 'flex items-center gap-1.5'
+      }
     >
       {TABS.map((tab) => {
         const Icon = tab.icon;
@@ -31,10 +35,10 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({ active, onChange, 
             type="button"
             onClick={() => onChange(tab.id)}
             aria-current={selected ? 'page' : undefined}
-            className={`relative flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-medium transition-colors sm:gap-2 sm:px-3 sm:text-[13px] ${
+            className={`relative flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-medium transition-colors sm:gap-2 sm:px-3.5 sm:text-[14px] ${
               selected
-                ? 'border-white/[0.08] bg-space-850 text-ink-100'
-                : 'border-transparent text-ink-400 hover:bg-space-900 hover:text-ink-200'
+                ? 'border-chalk/20 bg-chalk/[0.08] text-chalk'
+                : 'border-transparent text-ink-300 hover:bg-space-850 hover:text-ink-100'
             }`}
           >
             <Icon className="h-4 w-4" strokeWidth={1.5} />

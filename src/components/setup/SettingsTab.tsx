@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Settings,
   ShieldCheck,
+  Trash2,
   User,
   Users,
   X
@@ -23,9 +24,18 @@ import {
   MODEL_OPTIONS,
   modelName,
   modelOption,
-  loadBundleModel
+  loadBundleModel,
+  recommendationReason
 } from '../../services/aiModels';
-import { isModelReady, prepareModel, unloadModel } from '../../services/flightSurgeon';
+import {
+  cancelModelLoad,
+  deleteModelFiles,
+  isModelLoadCancelled,
+  isModelReady,
+  modelFilesCached,
+  prepareModel,
+  unloadModel
+} from '../../services/flightSurgeon';
 import {
   AlertPermission,
   alertPermission,
@@ -72,6 +82,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
   const [modelMessage, setModelMessage] = useState('');
   const [modelError, setModelError] = useState<string | null>(null);
   const [modelReady, setModelReady] = useState(() => isModelReady(aiModelTier));
+  const [modelCached, setModelCached] = useState(false);
+  const [deletingModel, setDeletingModel] = useState(false);
   const [bundleLabel, setBundleLabel] = useState<string | null>(null);
 
   const [scanningDevice, setScanningDevice] = useState(false);
@@ -83,6 +95,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
 
   useEffect(() => {
     setModelReady(isModelReady(aiModelTier));
+    setModelCached(false);
+    void modelFilesCached(aiModelTier).then(setModelCached);
   }, [aiModelTier]);
 
   useEffect(() => {
@@ -133,9 +147,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
         setModelMessage(progress.text);
       });
       setModelReady(true);
+      setModelCached(true);
       setModelProgress(1);
       setModelMessage('Ready on this device');
     } catch (error) {
+      if (isModelLoadCancelled(error)) {
+        setModelError(null);
+        setModelMessage('Download cancelled. No model was loaded.');
+        setModelReady(false);
+        return;
+      }
       setModelError(
         error instanceof Error
           ? error.message
@@ -147,6 +168,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
     }
   };
 
+  const cancelDownload = () => {
+    cancelModelLoad();
+    setModelBusy(false);
+    setModelError(null);
+    setModelMessage('Download cancelled. No model was loaded.');
+  };
+
   const removeModel = async () => {
     setModelBusy(true);
     await unloadModel();
@@ -154,6 +182,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
     setModelProgress(0);
     setModelMessage('Removed from memory. The files stay downloaded.');
     setModelBusy(false);
+  };
+
+  const removeDownloadedFiles = async () => {
+    setDeletingModel(true);
+    try {
+      await deleteModelFiles(aiModelTier);
+      setModelCached(false);
+      setModelReady(false);
+      setModelProgress(0);
+      setModelError(null);
+      setModelMessage('Downloaded files removed. The model will download again on first use.');
+    } catch (error) {
+      setModelError(
+        error instanceof Error ? error.message : 'The downloaded files could not be removed.'
+      );
+    } finally {
+      setDeletingModel(false);
+    }
   };
 
   const sensorText =
@@ -181,7 +227,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
           <Settings className="h-5 w-5 text-ink-400" strokeWidth={1.5} />
           Settings
         </h1>
-        <p className="mt-1 max-w-xl text-[13px] leading-6 text-ink-400">
+        <p className="mt-1 max-w-xl text-[14px] leading-6 text-ink-400">
           Everything on this page stays on this device. Change your details, reconnect the sensor, choose the
           on-board assistant or check the crew link.
         </p>
@@ -194,7 +240,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-[12px] font-medium text-ink-200" htmlFor="settings-name">
+            <label className="block text-[13px] font-medium text-ink-200" htmlFor="settings-name">
               Your name
             </label>
             <input
@@ -202,12 +248,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
               value={name}
               maxLength={40}
               onChange={(event) => setName(event.target.value)}
-              className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[13px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
+              className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[14px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
               placeholder="For example, Sam"
             />
           </div>
           <div>
-            <label className="flex items-center text-[12px] font-medium text-ink-200" htmlFor="settings-label">
+            <label className="flex items-center text-[13px] font-medium text-ink-200" htmlFor="settings-label">
               Your label
               <InfoTip text="Free text, such as Medic, Engineer or Team lead. It helps the crew know who sent an alert." />
             </label>
@@ -216,7 +262,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
               value={label}
               maxLength={40}
               onChange={(event) => setLabel(event.target.value)}
-              className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[13px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
+              className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[14px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
               placeholder="For example, Medic"
             />
           </div>
@@ -226,12 +272,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
             type="button"
             onClick={saveDetails}
             disabled={!name.trim() || !label.trim()}
-            className="h-9 rounded-lg bg-ink-100 px-3 text-[12px] font-medium text-space-950 transition-colors hover:bg-white disabled:opacity-40"
+            className="h-10 rounded-lg bg-chalk px-3 text-[13px] font-medium text-space-950 transition-colors hover:brightness-105 disabled:opacity-40"
           >
             Save details
           </button>
           {saved && (
-            <span className="flex items-center gap-1.5 text-[11px] text-positive">
+            <span className="flex items-center gap-1.5 text-[12px] text-positive">
               <Check className="h-3.5 w-3.5" strokeWidth={2} /> Saved on this device
             </span>
           )}
@@ -255,12 +301,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
               <Radio className="h-5 w-5" strokeWidth={1.5} />
             </span>
             <div>
-              <p className="text-[13px] font-medium text-ink-100">{sensorText}</p>
-              <p className="mt-0.5 font-mono text-[11px] text-ink-400">
+              <p className="text-[14px] font-medium text-ink-100">{sensorText}</p>
+              <p className="mt-0.5 font-mono text-[12px] text-ink-400">
                 {profile.sensorId ?? 'No sensor saved'}
               </p>
               {!profile.sensorId && (
-                <p className="mt-1 max-w-md text-[11px] leading-5 text-ink-500">
+                <p className="mt-1 max-w-md text-[12px] leading-5 text-ink-500">
                   Practice readings are showing. They behave like a calm crew member and never need a second
                   device.
                 </p>
@@ -271,7 +317,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
             <button
               type="button"
               onClick={() => setScannerOpen(true)}
-              className="flex h-9 items-center gap-1.5 rounded-lg bg-ink-100 px-3 text-[12px] font-medium text-space-950 transition-colors hover:bg-white"
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-chalk px-3 text-[13px] font-medium text-space-950 transition-colors hover:brightness-105"
             >
               <QrCode className="h-4 w-4" strokeWidth={1.7} />
               {profile.sensorId ? 'Replace sensor' : 'Scan sensor code'}
@@ -280,7 +326,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
               href="sensors.html"
               target="_blank"
               rel="noreferrer"
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15"
+              className="flex h-10 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[13px] font-medium text-ink-200 transition-colors hover:border-white/15"
             >
               <ExternalLink className="h-4 w-4" strokeWidth={1.6} />
               Sensor page
@@ -289,7 +335,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
               <button
                 type="button"
                 onClick={() => connectSensor(null)}
-                className="flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-critical/30 hover:text-critical"
+                className="flex h-10 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[13px] font-medium text-ink-300 transition-colors hover:border-critical/30 hover:text-critical"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={1.8} />
                 Remove
@@ -307,8 +353,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-white/[0.06] bg-space-950 p-4">
             <div>
-              <p className="text-[12px] font-medium text-ink-200">System notifications</p>
-              <p className="mt-1 max-w-md text-[11px] leading-5 text-ink-400">
+              <p className="text-[13px] font-medium text-ink-200">System notifications</p>
+              <p className="mt-1 max-w-md text-[12px] leading-5 text-ink-400">
                 {!notificationsSupported()
                   ? 'This address cannot show system notifications. Open the app on localhost or HTTPS. The full-screen alert still works.'
                   : permission === 'granted'
@@ -323,21 +369,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
                 type="button"
                 onClick={() => void enableNotifications()}
                 disabled={permissionBusy}
-                className="flex h-9 items-center gap-2 rounded-lg bg-ink-100 px-3 text-[12px] font-medium text-space-950 transition-colors hover:bg-white disabled:opacity-50"
+                className="flex h-10 items-center gap-2 rounded-lg bg-chalk px-3 text-[13px] font-medium text-space-950 transition-colors hover:brightness-105 disabled:opacity-50"
               >
                 {permissionBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />}
                 Allow alerts
               </button>
             )}
             {permission === 'granted' && (
-              <span className="flex items-center gap-1.5 text-[11px] text-positive">
+              <span className="flex items-center gap-1.5 text-[12px] text-positive">
                 <Check className="h-3.5 w-3.5" strokeWidth={2} /> Allowed
               </span>
             )}
           </div>
 
           {testSent !== null && (
-            <p className={`text-[11px] leading-5 ${testSent ? 'text-positive' : 'text-caution'}`}>
+            <p className={`text-[12px] leading-5 ${testSent ? 'text-positive' : 'text-caution'}`}>
               {testSent
                 ? 'A test notification was sent. If you did not see it, check the system notification settings.'
                 : 'The browser allowed alerts but could not show a test. The in-app alert still works.'}
@@ -348,22 +394,22 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
             <div className="flex items-start gap-3">
               <HardDrive className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" strokeWidth={1.5} />
               <div>
-                <p className="text-[12px] font-medium text-ink-200">Keep data on this device</p>
-                <p className="mt-1 max-w-md text-[11px] leading-5 text-ink-400">
+                <p className="text-[13px] font-medium text-ink-200">Keep data on this device</p>
+                <p className="mt-1 max-w-md text-[12px] leading-5 text-ink-400">
                   Ask the browser not to clear the downloaded model, your name and your settings when storage
                   runs low.
                 </p>
               </div>
             </div>
             {persisted ? (
-              <span className="flex items-center gap-1.5 text-[11px] text-positive">
+              <span className="flex items-center gap-1.5 text-[12px] text-positive">
                 <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.8} /> Protected
               </span>
             ) : (
               <button
                 type="button"
                 onClick={() => void protectStorage()}
-                className="h-9 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15"
+                className="h-10 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[13px] font-medium text-ink-200 transition-colors hover:border-white/15"
               >
                 Protect storage
               </button>
@@ -379,7 +425,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
       >
         <div className="rounded-lg border border-white/[0.06] bg-space-950 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[12px] text-ink-300">
+            <p className="text-[13px] text-ink-300">
               This device:{' '}
               <span className="text-ink-100">
                 {diagnostic.estimatedRamGb} GB memory · {diagnostic.cpuCores} cores · {diagnostic.gpuTier}
@@ -389,23 +435,59 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
               type="button"
               onClick={() => void runDeviceScan()}
               disabled={scanningDevice}
-              className="flex items-center gap-1.5 text-[11px] font-medium text-signal-strong transition-colors hover:text-ink-100 disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[12px] font-medium text-signal-strong transition-colors hover:text-ink-100 disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${scanningDevice ? 'animate-spin' : ''}`} strokeWidth={1.8} />
               Scan again
             </button>
           </div>
-          <p className="mt-1 text-[11px] text-ink-500">
-            Suggested for this device: {modelName(diagnostic.recommendedModel)}
-            {!diagnostic.webGpu && ' · no WebGPU found, so the written rules are the safe choice'}
-          </p>
-          {bundleLabel && <p className="mt-1 text-[10.5px] text-ink-500">Included in this download: {bundleLabel}</p>}
+          <div className="mt-3 rounded-lg border border-signal/25 bg-signal/[0.04] px-3 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-[11.5px] font-medium uppercase tracking-wide text-signal-strong">
+                  Suggested for this device
+                </p>
+                <p className="mt-0.5 text-[14px] font-medium text-ink-100">
+                  {diagnostic.gpuTier === 'Checking this device'
+                    ? 'Checking this device…'
+                    : modelName(diagnostic.recommendedModel)}
+                </p>
+              </div>
+              {diagnostic.recommendedModel !== 'none' &&
+                diagnostic.gpuTier !== 'Checking this device' &&
+                diagnostic.recommendedModel !== aiModelTier && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiModelTier(diagnostic.recommendedModel);
+                      setModelError(null);
+                      setModelMessage('');
+                    }}
+                    className="rounded-md border border-signal/30 bg-signal/[0.08] px-2.5 py-1 text-[11.5px] font-medium text-signal-strong transition-colors hover:bg-signal/[0.14]"
+                  >
+                    Use this model
+                  </button>
+                )}
+            </div>
+            <p className="mt-1 text-[11.5px] leading-5 text-ink-400">
+              {diagnostic.gpuTier === 'Checking this device'
+                ? 'Reading the memory and graphics limits that this browser reports.'
+                : recommendationReason(
+                    diagnostic.estimatedRamGb,
+                    diagnostic.webGpu,
+                    diagnostic.gpuTier,
+                    diagnostic.recommendedModel
+                  )}
+            </p>
+          </div>
+          {bundleLabel && <p className="mt-1 text-[11.5px] text-ink-500">Included in this download: {bundleLabel}</p>}
         </div>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {MODEL_OPTIONS.map((option) => {
             const active = option.id === aiModelTier;
             const ready = option.id !== 'none' && isModelReady(option.id);
+            const downloaded = active && modelCached;
             return (
               <button
                 key={option.id}
@@ -422,17 +504,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-[12px] font-medium text-ink-100">{option.name}</span>
+                  <span className="text-[13px] font-medium text-ink-100">{option.name}</span>
                   {ready ? (
-                    <span className="flex items-center gap-1 text-[10px] text-positive">
+                    <span className="flex items-center gap-1 text-[11px] text-positive">
                       <Check className="h-3 w-3" strokeWidth={2.2} /> Ready
                     </span>
+                  ) : downloaded ? (
+                    <span className="flex items-center gap-1 text-[11px] text-positive">
+                      <Download className="h-3 w-3" strokeWidth={2} /> Downloaded
+                    </span>
                   ) : active ? (
-                    <span className="text-[10px] text-signal-strong">Selected</span>
+                    <span className="text-[11px] text-signal-strong">Selected</span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-[11px] leading-4 text-ink-400">{option.note}</p>
-                <p className="mt-1.5 font-mono text-[10px] text-ink-500">
+                <p className="mt-1 text-[12px] leading-4 text-ink-400">{option.note}</p>
+                <p className="mt-1.5 font-mono text-[11px] text-ink-500">
                   {option.download} · {option.memory}
                 </p>
               </button>
@@ -444,36 +530,53 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
           <div className="mt-3 rounded-lg border border-white/[0.06] bg-space-950 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-[12px] font-medium text-ink-200">{selected.name}</p>
-                <p className="mt-0.5 text-[11px] text-ink-500">
+                <p className="text-[13px] font-medium text-ink-200">{selected.name}</p>
+                <p className="mt-0.5 text-[12px] text-ink-500">
                   {modelReady
                     ? 'Loaded in memory and ready to answer.'
-                    : `First use downloads ${selected.download}. The files stay cached for offline use.`}
+                    : modelCached
+                      ? 'Downloaded to this device. Load it to answer.'
+                      : `First use downloads ${selected.download}. The files stay cached for offline use.`}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {!modelReady ? (
                   <button
                     type="button"
                     onClick={() => void downloadModel()}
                     disabled={modelBusy}
-                    className="flex h-9 items-center gap-2 rounded-lg bg-ink-100 px-3 text-[12px] font-medium text-space-950 transition-colors hover:bg-white disabled:opacity-50"
+                    className="flex h-10 items-center gap-2 rounded-lg bg-chalk px-3 text-[13px] font-medium text-space-950 transition-colors hover:brightness-105 disabled:opacity-50"
                   >
                     {modelBusy ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
                     ) : (
                       <Download className="h-3.5 w-3.5" strokeWidth={1.8} />
                     )}
-                    {modelBusy ? 'Preparing' : 'Download and prepare'}
+                    {modelBusy ? 'Preparing' : modelCached ? 'Load downloaded model' : 'Download and prepare'}
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => void removeModel()}
                     disabled={modelBusy}
-                    className="h-9 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 disabled:opacity-50"
+                    className="h-10 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[13px] font-medium text-ink-300 transition-colors hover:border-white/15 disabled:opacity-50"
                   >
                     Unload from memory
+                  </button>
+                )}
+                {(modelCached || modelReady) && !modelBusy && (
+                  <button
+                    type="button"
+                    onClick={() => void removeDownloadedFiles()}
+                    disabled={deletingModel}
+                    className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[13px] font-medium text-ink-300 transition-colors hover:border-critical/30 hover:text-critical disabled:opacity-50"
+                  >
+                    {deletingModel ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.8} />
+                    )}
+                    {deletingModel ? 'Removing' : 'Delete download'}
                   </button>
                 )}
               </div>
@@ -481,27 +584,37 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
 
             {modelBusy && (
               <div className="mt-3">
-                <div className="h-1.5 overflow-hidden rounded-full bg-space-800">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[11.5px] leading-4 text-ink-500">
+                    {Math.round(modelProgress * 100)}% · {modelMessage || 'Starting'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={cancelDownload}
+                    className="flex items-center gap-1 rounded-md border border-caution/30 px-2 py-1 text-[11.5px] font-medium text-caution transition-colors hover:bg-caution/[0.08]"
+                  >
+                    <X className="h-3 w-3" strokeWidth={1.8} />
+                    Cancel download
+                  </button>
+                </div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-space-800">
                   <div
                     className="h-full rounded-full bg-signal transition-[width] duration-300"
-                    style={{ width: `${Math.round(modelProgress * 100)}%` }}
+                    style={{ width: `${Math.max(2, Math.round(modelProgress * 100))}%` }}
                   />
                 </div>
-                <p className="mt-1.5 text-[10.5px] leading-4 text-ink-500">
-                  {Math.round(modelProgress * 100)}% · {modelMessage || 'Starting'}
-                </p>
               </div>
             )}
 
             {!modelBusy && modelMessage && !modelError && (
-              <p className="mt-2 text-[11px] text-ink-500">{modelMessage}</p>
+              <p className="mt-2 text-[12px] text-ink-500">{modelMessage}</p>
             )}
-            {modelError && <p className="mt-2 text-[11px] leading-5 text-caution">{modelError}</p>}
+            {modelError && <p className="mt-2 text-[12px] leading-5 text-caution">{modelError}</p>}
           </div>
         )}
 
         {aiModelTier === 'none' && (
-          <p className="mt-3 text-[11px] leading-5 text-ink-500">
+          <p className="mt-3 text-[12px] leading-5 text-ink-500">
             No model will download. The flight surgeon uses the written NASA action cards and the rules engine.
           </p>
         )}
@@ -520,23 +633,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
             value={peers.length ? peers.map((peer) => peer.name || 'Unnamed').join(', ') : 'None seen yet'}
           />
         </div>
-        <p className="mt-3 text-[11px] leading-5 text-ink-500">
+        <p className="mt-3 text-[12px] leading-5 text-ink-500">
           If the link says “This browser only”, start the relay or the packaged launcher. The sensor page and
           every console must open the same address on the network.
         </p>
-      </Section>
-
-      <Section
-        icon={Cpu}
-        title="This device"
-        note="What the console can use for the on-device assistant."
-      >
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Fact label="Memory" value={`${diagnostic.estimatedRamGb} GB`} />
-          <Fact label="Processor cores" value={String(diagnostic.cpuCores)} />
-          <Fact label="Browser storage" value={`${diagnostic.availableStorageGb} GB`} />
-          <Fact label="Graphics" value={diagnostic.webGpu ? 'WebGPU ready' : 'No WebGPU'} />
-        </div>
       </Section>
 
       <Section
@@ -547,11 +647,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
         <button
           type="button"
           onClick={onRunSetup}
-          className="h-9 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15"
+          className="h-10 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[13px] font-medium text-ink-200 transition-colors hover:border-white/15"
         >
           Run setup again
         </button>
-        <p className="mt-2 text-[11px] leading-5 text-ink-500">
+        <p className="mt-2 text-[12px] leading-5 text-ink-500">
           This is a training simulation. It does not replace real medical care or mission rules.
         </p>
       </Section>
@@ -582,11 +682,11 @@ function Section({
   return (
     <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
       <div className="mb-4">
-        <h2 className="flex items-center gap-2 text-[15px] font-medium text-ink-100">
+        <h2 className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
           <Icon className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
           {title}
         </h2>
-        <p className="mt-1 max-w-2xl text-[11px] leading-5 text-ink-500">{note}</p>
+        <p className="mt-1 max-w-2xl text-[12px] leading-5 text-ink-500">{note}</p>
       </div>
       {children}
     </section>
@@ -596,8 +696,8 @@ function Section({
 function Fact({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="rounded-lg border border-white/[0.06] bg-space-950 px-3 py-2.5">
-      <p className="text-[10.5px] text-ink-500">{label}</p>
-      <p className={`mt-0.5 break-words text-[12px] text-ink-100 ${mono ? 'font-mono text-[11px]' : ''}`}>{value}</p>
+      <p className="text-[11.5px] text-ink-500">{label}</p>
+      <p className={`mt-0.5 break-words text-[13px] text-ink-100 ${mono ? 'font-mono text-[12px]' : ''}`}>{value}</p>
     </div>
   );
 }
