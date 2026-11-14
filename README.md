@@ -115,7 +115,7 @@ npm run package:bundles
 ```
 
 `scripts/package-bundles.mjs` writes one ZIP per assistant and system (twelve in total) to `bundles/` and
-writes a `downloads.json` manifest with the size and checksum of each file. The ZIPs are not copied into the
+writes a `downloads.json` manifest with the size of each file. The ZIPs are not copied into the
 site by default, because they are published on a GitHub release instead of being uploaded to Cloudflare with
 every deploy. Options:
 
