@@ -7,5 +7,6 @@ dist-ssr
 
 tsconfig.tsbuildinfo
 bundles
+site/downloads
 site/downloads.json
 .wrangler

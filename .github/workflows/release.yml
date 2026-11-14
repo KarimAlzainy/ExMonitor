@@ -54,20 +54,6 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload the ZIPs to R2
-        if: steps.cloudflare.outputs.ready == 'true'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          for file in bundles/*.zip; do
-            name=$(basename "$file")
-            npx --yes wrangler@4 r2 object put "ex-monitor-downloads/$name" \
-              --file "$file" \
-              --content-type application/zip \
-              --remote
-          done
-
       - name: Deploy the download page
         if: steps.cloudflare.outputs.ready == 'true'
         env:

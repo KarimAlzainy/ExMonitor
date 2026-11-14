@@ -102,32 +102,40 @@ npm run build
 npm run package:bundles
 ```
 
-`scripts/package-bundles.mjs` writes four ZIPs to `bundles/` and a `downloads.json` manifest. Options:
+`scripts/package-bundles.mjs` writes four ZIPs to `bundles/`, copies them into `site/downloads/` for the
+download page, and writes a `downloads.json` manifest. Options:
 
 ```bash
 node scripts/package-bundles.mjs --models phi3,none --out bundles --manifest site/downloads.json
 ```
+
+Use `--no-site` to skip the copies into `site/downloads/`.
 
 ## Download page and hosting
 
 `site/` is a static landing page. It checks WebGPU, memory and processor cores in the browser, recommends a
 copy, and links to `/downloads/<file>.zip`.
 
-`worker/index.js` serves the landing page and streams the ZIPs from the `ex-monitor-downloads` R2 bucket.
-Configuration lives in `wrangler.jsonc`.
+The same Cloudflare Worker serves the landing page and the ZIPs, so there is no separate storage bucket and
+no card is needed. `worker/index.js` adds the download filename and handles resumed byte ranges.
+Configuration lives in `wrangler.jsonc`; every ZIP is well under the 25 MiB per-file limit for static assets.
 
 Publishing is handled by `.github/workflows/release.yml` on every push to `main`:
 
-1. Install, build and package the four ZIPs.
-2. Upload them to the R2 bucket `ex-monitor-downloads`.
-3. Deploy the Worker and the landing page.
+1. Install, build and package the four ZIPs. Packaging copies them into `site/downloads/`.
+2. Deploy the Worker and the landing page.
 
-Before the first run:
+To publish from this machine:
 
-- Create the R2 bucket once: `npx wrangler r2 bucket create ex-monitor-downloads`.
-- Add repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+```bash
+npx wrangler login
+npm run build
+npm run package:bundles
+npm run site:deploy
+```
 
-Without those secrets the workflow still builds the ZIPs and keeps them as a workflow artifact.
+For GitHub Actions, add repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Without those
+secrets the workflow still builds the ZIPs and keeps them as a workflow artifact.
 
 ## Scripts
 
@@ -139,7 +147,7 @@ Without those secrets the workflow still builds the ZIPs and keeps them as a wor
 | `npm run relay` | Relay only, for development. |
 | `npm run package:bundles` | Create the four downloadable ZIPs and the manifest. |
 | `npm run site:dev` | Run the landing page and Worker locally with Wrangler. |
-| `npm run site:deploy` | Deploy the landing page and Worker. |
+| `npm run site:deploy` | Deploy the download page and its ZIPs. |
 
 ## Project layout
 
@@ -160,7 +168,7 @@ src/
 server.js         Zero-dependency launcher, static server and relay
 scripts/          Build helper and bundle packaging
 site/             Download landing page
-worker/           Cloudflare Worker for the ZIP downloads
+worker/           Cloudflare Worker that serves the landing page and ZIPs
 ```
 
 ## Limits

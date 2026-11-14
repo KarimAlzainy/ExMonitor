@@ -27,7 +27,9 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 
 const version = argValue('--version', process.env.GITHUB_SHA?.slice(0, 7) || packageJson.version);
 const outDir = path.resolve(root, argValue('--out', 'bundles'));
 const distDir = path.join(root, 'dist');
-const manifestPath = path.resolve(root, argValue('--manifest', path.join(outDir, 'downloads.json')));
+const manifestPath = path.resolve(root, argValue('--manifest', path.join('site', 'downloads.json')));
+const siteOut = path.resolve(root, argValue('--site-out', path.join('site', 'downloads')));
+const copyToSite = !process.argv.includes('--no-site');
 const selection = argValue('--models', 'phi3,llama3,gemma2,none')
   .split(',')
   .map((value) => value.trim())
@@ -263,6 +265,17 @@ const manifest = {
 
 fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
 fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+if (copyToSite) {
+  if (path.resolve(outDir) !== siteOut) {
+    fs.rmSync(siteOut, { recursive: true, force: true });
+  }
+  fs.mkdirSync(siteOut, { recursive: true });
+  for (const model of models) {
+    fs.copyFileSync(path.join(outDir, model.zip), path.join(siteOut, model.zip));
+  }
+  console.log(`Site copies: ${path.relative(root, siteOut)}`);
+}
 
 console.log('');
 console.log(`Wrote ${models.length} ZIP file(s) to ${path.relative(root, outDir) || '.'}`);
