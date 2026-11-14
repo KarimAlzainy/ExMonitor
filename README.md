@@ -1,273 +1,179 @@
-# ExMonitor
+# Ex-Monitor
 
-An offline-first astronaut health console for deep-space missions. Built for the NASA Space Apps Challenge.
+A crew health console for a training simulation. It shows live body readings, sends crew alerts across the
+local network, and can answer questions with a language model that runs entirely in the browser.
 
-When Earth is up to **22 minutes away**, a crew cannot wait for a ground surgeon to answer. ExMonitor keeps the medical loop on board: it watches live vitals and radiation, runs NASA-derived safety rules, answers symptom questions with a local language model, and shares an SOS across the crew's own network.
+No account, no cloud service and no separate AI runtime. The downloaded copy contains the whole app.
 
-The app is a single-page console that installs as a PWA and keeps working without an internet connection. A small local relay extends the SOS to other crew devices on the same Wi-Fi or hotspot.
+## Three pieces
 
----
+| Piece | What it does |
+| --- | --- |
+| **Console** (`/`) | Heart trace, five vital cards, the written NASA rules, the flight surgeon and crew alerts. |
+| **Sensor page** (`/sensors.html`) | Turns a phone or second screen into a pretend body sensor. It streams realistic readings eight times a second. |
+| **Crew link** (`/relay`) | One small WebSocket relay inside the launcher. It carries alerts, presence and sensor frames between devices on the same network. |
 
-## What it does
+Two tabs in the same browser also reach each other through a local channel, so the relay is optional for a
+quick demo.
 
-### Live telemetry
-- Lead II ECG strip drawn on a phosphor grid, with PR, QRS, QTc and ST readings.
-- Heart rate, blood oxygen, core temperature and GSR stress, each with a target range and a nominal, caution or critical label.
-- Radiation dose rate and cumulative mission dose on scales marked with NASA's caution and ceiling limits (MR092L).
-- One-second simulation with smooth, realistic drift; demo presets for normal, workout and emergency conditions.
+## Requirements
 
-### NASA safety rules
-- A deterministic rules engine evaluates every reading against hypoxia, cardiac, thermal and radiation thresholds.
-- A critical reading raises an SOS automatically.
-- Five pre-approved symptom protocols with NASA references:
-  - Chest pain / pressure — Flight Rule MED-10.4
-  - Dizziness / hypoxia — EVA Contingency Med-3.2
-  - Exhaustion / overheating — Flight Rule MED-8.1
-  - Radiation flare exposure — MR092L
-  - Arrhythmia / palpitations — MEDB 5.2
+- Node.js 18 or newer (the launcher and the relay use only built-in modules).
+- A modern browser. Chrome or Edge is recommended.
+- Optional, for the on-device assistant: WebGPU and an internet connection for the first model download.
 
-### On-device flight surgeon
-- Streams triage answers from a local [Ollama](https://ollama.com) model with the live vitals snapshot attached to every question.
-- Four modes: Phi-3 3.8B mini (recommended at 8 GB RAM), Llama-3.2, Gemma-2, and No-AI rules.
-- When the model is offline, written fallback advice streams instead; the No-AI mode answers straight from the NASA protocol cards.
-- Hardware scan estimates RAM, cores and storage, then recommends a model tier.
-
-### Chest-strap pairing
-- Camera QR scanner for `NASA-STRAP-*` labels, with a simulated label when the camera or decoder is unavailable.
-- Web Bluetooth pairing to a standard heart-rate service (0x180D / characteristic 0x2A37).
-- Graceful simulated handshake so the demo works without physical hardware.
-
-### EXTEM-Mesh SOS
-- SOS, acknowledgement and presence messages over a local WebSocket relay on port 8080.
-- BroadcastChannel fallback between open tabs when the relay is not running.
-- Automatic node discovery: every node announces itself every 7 seconds.
-- Every connected device shows the same full-screen takeover and sounds the Klaxon.
-- A second browser or phone on the same hotspot is enough to demonstrate it.
-
-### Demo and emergency
-- Slide-out demo controls with presets, manual sliders for every vital, and a test SOS.
-- Synthesized pulse, confirmation ping and repeating two-tone Klaxon, generated in the browser with no audio files.
-- A sound toggle and a calm, single-action emergency takeover.
-
----
-
-## Tech stack
-
-| Layer | Choice |
-|---|---|
-| UI | React 18, TypeScript, Tailwind CSS, lucide-react |
-| Build | Vite 6, vite-plugin-pwa (Workbox service worker) |
-| Local AI | Ollama over HTTP, proxied through Vite |
-| Mesh | Node `ws` WebSocket relay, BroadcastChannel fallback |
-| Browser APIs | Web Bluetooth, Web Audio, IndexedDB, Canvas, Service Worker, BarcodeDetector |
-
-There is no cloud backend. Everything except the optional local model and the optional relay runs in the browser.
-
----
-
-## Architecture
-
-```text
-Browser
-├── Mission console (React PWA)
-│   ├── Live telemetry ....... ECG, vitals, radiation scales
-│   ├── Flight surgeon ....... chat, symptom cards, live snapshot
-│   ├── Pairing .............. QR scan, Bluetooth handshake, model tiers
-│   ├── Virtual lab .......... hazards, judge walkthrough
-│   └── Demo and SOS ......... simulator drawer, emergency takeover
-│
-├── Mission state ............ one provider for vitals, rules, SOS, pairing, sound
-├── NASA rules ............... thresholds + five protocol cards
-├── Flight surgeon client .... Ollama streaming + written fallbacks
-├── EXTEM-Mesh ............... WebSocket + BroadcastChannel transport
-└── Strap and alarms ......... Web Bluetooth + Web Audio
-
-External
-├── Ollama ................... localhost:11434 (optional)
-│   └── Vite proxy ........... /api/ollama → localhost:11434
-└── Mesh relay ............... localhost:8080 (optional, for multi-device SOS)
-```
-
-A generated, interactive architecture map lives in `floorplan/` and is kept out of git.
-
----
-
-## Getting started
-
-### Prerequisites
-
-- Node.js 20.6 or newer (tested on Node 24) and npm.
-- Optional: [Ollama](https://ollama.com) for real model answers.
-- Optional: a Bluetooth heart-rate strap.
-- Optional: a second device or browser tab for the mesh demo.
-- Chrome or Edge for Web Bluetooth and live QR decoding; other browsers fall back to simulation.
-
-### Install
+## Run from the repository
 
 ```bash
 npm install
+npm run build     # builds the console and the sensor page into dist/
+npm start         # serves dist/ and opens http://localhost:8080
 ```
 
-### Run the console
+`npm start` prints a second address for the local network. Open that address on a phone, add
+`/sensors.html`, then scan the code shown there from **Settings → Scan sensor code** in the console.
+
+For development with hot reload:
 
 ```bash
-npm run dev
+npm run relay     # relay only, port 8080
+npm run dev       # Vite on port 5173, proxying /relay to 8080
 ```
 
-Open <http://localhost:5173>. The dev server listens on all local addresses, so phones on the same network can open the printed LAN URL.
+## Run a packaged download
 
-### Start the mesh relay (optional)
+The download page ships one ZIP per assistant choice. Unzip it and start the launcher:
 
-In a second terminal:
+- Windows: double-click `Start Ex-Monitor.cmd`
+- macOS: double-click `Start Ex-Monitor.command`
+- Linux: run `./start-ex-monitor.sh`
 
-```bash
-npm run server
-```
+The launcher finds a free port, serves the app and the relay from one address, and opens the browser.
+Nothing is installed into the system.
 
-The relay listens on port 8080 and prints the hotspot URLs to use. Without it, the console still shares SOS between tabs in the same browser.
+Each ZIP contains the latest built app plus `app/model-config.json`, which selects the assistant that was
+chosen on the download page.
 
-### Add a local flight surgeon (optional)
+## The assistant
 
-```bash
-ollama pull phi3:3.8b-mini-4k-instruct-q8_0
-ollama pull llama3.2
-ollama pull gemma2
-ollama serve
-```
+The flight surgeon uses one of four choices:
 
-The console checks `/api/ollama` first (the Vite proxy) and then `http://localhost:11434` directly. If neither answers, answers fall back to the written guidance.
+- **Phi-3.5 mini** — strongest answers, about 2.1 GB on first use.
+- **Llama 3.2 3B** — balanced, about 1.8 GB.
+- **Gemma 2 2B** — smallest, about 1.5 GB.
+- **No AI** — written NASA action cards only, nothing to download.
 
-### Production build
+AI answers come from [WebLLM](https://github.com/mlc-ai/web-llm) running in a worker with WebGPU. The model
+is downloaded once from Hugging Face, cached by the browser, and then works offline. Nothing is sent to a
+server. Without WebGPU, or if a download fails, the console falls back to the written rules.
+
+The model tier is saved in `localStorage`. A new bundle carries a build stamp, so a freshly downloaded ZIP
+selects its own assistant once; a choice made later in Settings is kept.
+
+## Alerts
+
+- **Sender** sees a compact panel with the alert status and one **Cancel alert** button. No full-screen
+  overlay.
+- **Other devices** show a full-screen alert until each one acknowledges it.
+- **Acknowledge** clears the alert on that device and tells the sender who acknowledged.
+- **Cancel** from the sender clears the alert on every device.
+- Critical readings can also start an alert automatically; the sender can cancel it the same way.
+
+System notifications are optional. Browsers only deliver them while the console is open or installed, and
+only on `localhost` or HTTPS. The full-screen alert works everywhere while the page is open.
+
+## Sensor page
+
+Five situations change the story gradually rather than jumping between numbers:
+
+- **At rest** — a calm crew member in the habitat.
+- **Exercise** — heart rate, heat and sweat rise.
+- **Low oxygen** — blood oxygen falls into the critical range and can start an alert.
+- **Radiation storm** — dose rate climbs past the caution and critical lines.
+- **Recovery** — readings settle after an event.
+
+The page draws an ECG and a pulse wave from the generated signal and shows the same numbers the console
+receives. Sensor codes are names, not passwords; keep the demo on a network you trust.
+
+## Build the downloads
 
 ```bash
 npm run build
-npm run preview
+npm run package:bundles
 ```
 
-The production preview runs on <http://localhost:4173>. The build also generates the offline service worker and web manifest.
+`scripts/package-bundles.mjs` writes four ZIPs to `bundles/` and a `downloads.json` manifest. Options:
 
----
-
-## Using the console
-
-| Section | What you can do |
-|---|---|
-| **Live telemetry** | Watch the ECG, vitals and radiation, acknowledge the status strip, and send a crew SOS. |
-| **Flight surgeon** | Ask a question or tap a symptom card. Every question carries the current vitals snapshot. |
-| **Pairing** | Scan a strap label, bind a crew profile, run the Bluetooth handshake, choose a model tier, cache a pack, and see mesh peers. |
-| **Virtual lab** | Read how the console answers the five hazards of spaceflight and follow the judge walkthrough. |
-
-The header holds the mission clock, one-way Earth delay, mesh state, crew name, sound toggle and demo controls.
-
-## Demo walkthrough
-
-1. Open **Demo controls** and start in **Normal mode** so the ECG sits near 72 BPM and 98% SpO2.
-2. On **Pairing**, scan the simulated strap label (`NASA-STRAP-EVA-409`), bind a crew role, then run the Bluetooth handshake.
-3. Ask the **Flight surgeon** about dizziness. The live numbers travel with the question.
-4. Switch the demo panel to **Emergency danger mode**. SpO2 falls to 84% and radiation jumps to 2.45 mSv/hr, which trips the Klaxon and the mesh SOS.
-5. Acknowledge the alert to silence the alarm. A second browser on the same hotspot, with the relay running, receives the same overlay.
-
----
-
-## NASA rules at a glance
-
-| Signal | Caution | Critical |
-|---|---|---|
-| Blood oxygen (SpO2) | below 93% | below 88% |
-| Heart rate | above 125 BPM | above 155 or below 42 BPM |
-| Core temperature | 37.8 °C or higher | 38.8 °C or higher |
-| Radiation dose rate | 0.30 mSv/hr or higher | 1.00 mSv/hr or higher |
-
-These thresholds and the five symptom cards are adapted from public NASA aerospace medicine references for a hackathon demo. They are decision support, not flight-certified medical software.
-
----
-
-## Ports and configuration
-
-| Port | Service | Where |
-|---|---|---|
-| 5173 | Dev server | `vite.config.ts` |
-| 4173 | Production preview | `vite.config.ts` |
-| 8080 | Mesh relay | `server.js` (`WS_PORT`) |
-| 11434 | Ollama | its own default; proxied by Vite |
-
-Useful files:
-
-- `vite.config.ts` — dev port, Ollama proxy, PWA manifest and caching.
-- `tailwind.config.js` — the console's graphite, ink, signal, phosphor and status palette.
-- `server.js` — relay port, LAN addresses and packet forwarding.
-- `src/services/nasaRules.ts` — thresholds and symptom protocols.
-- `src/context/TelemetryContext.tsx` — the single source of live state.
-
----
-
-## Project structure
-
-```text
-ExMonitor/
-├── index.html                  Page shell, title, icons, theme colour
-├── server.js                   EXTEM-Mesh relay (port 8080)
-├── vite.config.ts              Dev server, Ollama proxy, PWA build
-├── tailwind.config.js          Colour and type tokens
-├── public/                     App icons and favicons
-├── scripts/                    Rollup WebAssembly fallback for builds
-└── src/
-    ├── main.tsx                App start-up and offline registration
-    ├── App.tsx                 Frame, tabs, error boundary
-    ├── index.css               Base surfaces, focus ring, sliders
-    ├── components/
-    │   ├── layout/             Header and section menu
-    │   ├── dashboard/          ECG, vital cards, radiation scales
-    │   ├── ai/                 Flight surgeon chat
-    │   ├── setup/              Pairing screen and QR scanner
-    │   ├── simulator/          Demo controls drawer
-    │   ├── emergency/          Full-screen SOS takeover
-    │   └── lab/                Virtual lab and walkthrough
-    ├── context/                Live mission state
-    ├── services/               Rules, AI client, mesh, Bluetooth, audio
-    └── types/                  Shared data shapes
+```bash
+node scripts/package-bundles.mjs --models phi3,none --out bundles --manifest site/downloads.json
 ```
 
----
+## Download page and hosting
 
-## What is simulated
+`site/` is a static landing page. It checks WebGPU, memory and processor cores in the browser, recommends a
+copy, and links to `/downloads/<file>.zip`.
 
-The console is a hackathon demo. These parts are simulated today:
+`worker/index.js` serves the landing page and streams the ZIPs from the `ex-monitor-downloads` R2 bucket.
+Configuration lives in `wrangler.jsonc`.
 
-- Vitals are generated by a one-second simulator. Demo presets force normal, workout and emergency values.
-- The ECG trace is drawn from the current heart rate, not measured from electrodes; a connected strap only changes the pulse driving it.
-- Pairing falls back to a simulated handshake when Web Bluetooth or a strap is unavailable.
-- The model pack cached on the Pairing screen is a stand-in written to IndexedDB; it does not contain real model weights.
-- When Ollama is offline, the flight surgeon streams pre-written fallback advice.
-- The camera scanner accepts the simulated label `NASA-STRAP-EVA-409` when live decoding is unavailable.
+Publishing is handled by `.github/workflows/release.yml` on every push to `main`:
 
----
+1. Install, build and package the four ZIPs.
+2. Upload them to the R2 bucket `ex-monitor-downloads`.
+3. Deploy the Worker and the landing page.
+
+Before the first run:
+
+- Create the R2 bucket once: `npx wrangler r2 bucket create ex-monitor-downloads`.
+- Add repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+
+Without those secrets the workflow still builds the ZIPs and keeps them as a workflow artifact.
 
 ## Scripts
 
-| Command | Does |
-|---|---|
-| `npm run dev` | Starts the Vite dev server on port 5173 for the local network. |
-| `npm run build` | Type-checks and builds the production app, service worker and manifest. |
-| `npm run preview` | Serves the production build on port 4173. |
-| `npm run server` | Starts the EXTEM-Mesh relay on port 8080. |
-| `npm run start` | Alias for the relay. |
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server with the relay proxy. |
+| `npm run build` | Type-check and build the console and the sensor page. |
+| `npm start` | Serve the build and the relay from one address. |
+| `npm run relay` | Relay only, for development. |
+| `npm run package:bundles` | Create the four downloadable ZIPs and the manifest. |
+| `npm run site:dev` | Run the landing page and Worker locally with Wrangler. |
+| `npm run site:deploy` | Deploy the landing page and Worker. |
 
----
+## Project layout
 
-## Browser support
+```
+src/
+  components/
+    dashboard/    Heart trace, vital cards and radiation card
+    ai/           Flight surgeon chat, model download and rules fallback
+    setup/        Settings page, sensor scanner
+    onboarding/   First-run wizard
+    emergency/    Receiver overlay and sender panel
+    guide/        How it works page
+    layout/       Header and section navigation
+    ui/           Small shared pieces such as hover explanations
+  context/        One provider for readings, alerts, presence and the model tier
+  sensors/        The separate sensor page and its signal generator
+  services/       Rules, WebLLM, relay client, notifications, profile, model catalog
+server.js         Zero-dependency launcher, static server and relay
+scripts/          Build helper and bundle packaging
+site/             Download landing page
+worker/           Cloudflare Worker for the ZIP downloads
+```
 
-- **Chrome / Edge** — full path, including Web Bluetooth and live QR decoding.
-- **Safari / Firefox** — the console runs, but strap pairing and live camera decode fall back to simulation.
-- Camera access needs HTTPS or `localhost`.
-- Install the PWA from the browser menu to run it full-screen and offline.
+## Limits
 
----
+- The sensor page sends pretend readings. It is not a medical device and does not read a real body sensor.
+- The ECG shape is generated from the simulated heart rate; it is not a measurement.
+- AI answers can be wrong. The written NASA action cards stay available on every copy.
+- This is a training simulation. It does not replace a real flight surgeon or mission medical rules.
 
-## Credits
+## References
 
-Built for the **NASA Space Apps Challenge**.
+- NASA MR092L — space radiation limits.
+- NASA MEDB 5.2 — cardiovascular and metabolic monitoring.
+- NASA EVA contingency medical protocols.
 
-References used in the rules and protocols: NASA MR092L radiation monitoring, NASA MEDB 5.2 cardiovascular limits, NASA Flight Rules MED-10.4 and MED-8.1, and the EVA atmospheric-depletion contingency.
-
-The five hazards of human spaceflight — space radiation, isolation, distance from Earth, gravity fields and the hostile closed environment — frame the Virtual lab section.
+Built for the NASA Space Apps Challenge.

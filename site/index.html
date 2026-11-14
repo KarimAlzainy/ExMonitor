@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ex-Monitor · crew health console download</title>
+    <meta
+      name="description"
+      content="Download Ex-Monitor, an offline-first crew health console with a separate sensor page and an on-device assistant."
+    />
+    <meta name="theme-color" content="#0a0b0d" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#downloads">Skip to the download</a>
+
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Ex-Monitor home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M2 13h4l2-6 3 12 2-8 2 4h7" /></svg>
+        </span>
+        Ex-Monitor
+      </a>
+      <nav class="site-nav" aria-label="Page">
+        <a href="#inside">What's inside</a>
+        <a href="#how">How to run</a>
+        <a class="nav-button" href="#downloads">Download</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="kicker">A crew health console for the long way home</p>
+          <h1>Care for the crew when the signal home is 22 minutes away.</h1>
+          <p class="lede">
+            Ex-Monitor shows live body readings, runs an on-device assistant and sends crew alerts across the
+            same Wi-Fi. The sensor is a second page, not a box you have to buy.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#downloads">Choose your download</a>
+            <a class="button button-quiet" href="#inside">See what's inside</a>
+          </div>
+          <p class="hero-note">Windows, macOS and Linux · Node.js 18 or newer · No account</p>
+        </div>
+
+        <div class="console" aria-hidden="true">
+          <div class="console-top">
+            <span class="console-title">Ex-Monitor</span>
+            <span class="console-link"><i></i> Crew link</span>
+          </div>
+          <div class="console-body">
+            <div class="trace-head">
+              <span>Heart trace</span>
+              <span class="trace-value">72 <small>BPM</small></span>
+            </div>
+            <svg class="trace" viewBox="0 0 520 112" preserveAspectRatio="none">
+              <defs>
+                <path
+                  id="beat"
+                  d="M0 80 L18 80 C22 75 27 75 31 80 L42 80 L46 84 L50 28 L54 98 L58 80 L72 80 C80 69 90 69 98 80 L104 80"
+                />
+              </defs>
+              <g class="trace-line">
+                <use href="#beat" x="0" />
+                <use href="#beat" x="104" />
+                <use href="#beat" x="208" />
+                <use href="#beat" x="312" />
+                <use href="#beat" x="416" />
+              </g>
+            </svg>
+            <div class="console-metrics">
+              <div><span>Oxygen</span><strong>98<small>%</small></strong></div>
+              <div><span>Temperature</span><strong>36.8<small>°C</small></strong></div>
+              <div><span>Radiation</span><strong>0.04<small>mSv/hr</small></strong></div>
+            </div>
+            <div class="console-status">
+              <span class="status-dot"></span>
+              All readings normal
+              <span class="status-ref">NASA baseline</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fact-strip" aria-label="Key facts">
+        <p><span>01</span> Runs from a folder on this computer</p>
+        <p><span>02</span> Model files cached after the first use</p>
+        <p><span>03</span> Readings stay on the crew network</p>
+      </section>
+
+      <section id="inside" class="section">
+        <div class="section-head">
+          <h2>Three pieces, one folder.</h2>
+          <p>
+            The console is the screen you watch. The sensor page can live on a phone. The crew link connects
+            every device on the same network.
+          </p>
+        </div>
+        <div class="pieces">
+          <article class="piece">
+            <span class="piece-number">01</span>
+            <h3>Console</h3>
+            <p>
+              A heart trace, five vital cards and the written NASA rules. Send an alert and every other console
+              shows it until that crew member acknowledges it.
+            </p>
+          </article>
+          <article class="piece">
+            <span class="piece-number">02</span>
+            <h3>Sensor page</h3>
+            <p>
+              Open it on a phone or a second screen. Pick rest, exercise, low oxygen, a radiation storm or
+              recovery, and it streams realistic readings eight times a second.
+            </p>
+          </article>
+          <article class="piece">
+            <span class="piece-number">03</span>
+            <h3>Crew link</h3>
+            <p>
+              One small relay runs inside the launcher. No cloud, no account. Two tabs in the same browser also
+              find each other without it.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="downloads" class="section downloads">
+        <div class="section-head">
+          <h2>Download the copy that fits this computer.</h2>
+          <p>
+            The check below happens in this browser and is never sent anywhere. Every choice contains the same
+            app; only the assistant that comes pre-selected changes.
+          </p>
+        </div>
+
+        <div class="config">
+          <article class="step">
+            <span class="step-number">01</span>
+            <h3>This device</h3>
+            <p id="device-summary" class="device-summary">Checking this browser…</p>
+            <ul id="device-facts" class="facts"></ul>
+            <button id="rescan" class="text-button" type="button">Check again</button>
+          </article>
+
+          <article class="step">
+            <span class="step-number">02</span>
+            <h3>Assistant</h3>
+            <div id="models" class="models" role="radiogroup" aria-label="Assistant choice"></div>
+          </article>
+
+          <article class="step step-download">
+            <span class="step-number">03</span>
+            <h3>Your download</h3>
+            <a
+              id="download-button"
+              class="button button-primary button-block"
+              href="/downloads/ex-monitor-no-ai.zip"
+              download="ex-monitor-no-ai.zip"
+              >Download ZIP</a
+            >
+            <p id="download-meta" class="download-meta">A folder with the console, the sensor page and the launcher.</p>
+            <p class="fineprint">
+              Unzip it, then run <code>Start Ex-Monitor</code>. Node.js 18 or newer is required. The first AI
+              use downloads the model once; after that the console works without the internet.
+            </p>
+            <p id="download-error" class="download-error" hidden></p>
+          </article>
+        </div>
+
+        <p class="disclaimer">
+          AI answers can be wrong. The written NASA action cards stay available on every copy. Ex-Monitor is a
+          training simulation, not a medical device.
+        </p>
+      </section>
+
+      <section id="how" class="section how">
+        <div class="section-head">
+          <h2>From ZIP to console in a minute.</h2>
+        </div>
+        <ol class="how-list">
+          <li>
+            <div>
+              <h3>Unzip the folder</h3>
+              <p>Put it somewhere you can find again. Nothing installs into the system.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Start the launcher</h3>
+              <p>
+                Windows: double-click <code>Start Ex-Monitor.cmd</code>. macOS: double-click
+                <code>Start Ex-Monitor.command</code>. Linux: run <code>./start-ex-monitor.sh</code>.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Open the sensor page</h3>
+              <p>
+                The launcher prints an address for your network. Open that address with
+                <code>/sensors.html</code> on a phone, then scan its code in Settings.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <p class="footer-brand">Ex-Monitor</p>
+        <p class="footer-note">
+          Built for the NASA Space Apps Challenge. MR092L / MEDB 5.2 references. Not for real medical use.
+        </p>
+      </div>
+      <p id="build-label" class="build-label">Download files are built from the latest commit.</p>
+    </footer>
+  </body>
+</html>

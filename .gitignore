@@ -4,3 +4,8 @@ dist-ssr
 *.local
 .vscode
 .DS_Store
+
+tsconfig.tsbuildinfo
+bundles
+site/downloads.json
+.wrangler

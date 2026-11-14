@@ -1,12 +1,13 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const ollamaProxy = {
-  '/api/ollama': {
-    target: 'http://localhost:11434',
+const relayProxy = {
+  '/relay': {
+    target: 'ws://127.0.0.1:8080',
     changeOrigin: true,
-    rewrite: (path: string) => path.replace(/^\/api\/ollama/, '')
+    ws: true
   }
 };
 
@@ -18,9 +19,9 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         id: '/',
-        name: 'ExMonitor - Astronaut Health Monitor',
-        short_name: 'ExMonitor',
-        description: 'Offline-First NASA Biometric & Radiation Telemetry Monitor with Edge-AI',
+        name: 'Ex-Monitor - Crew Health Console',
+        short_name: 'Ex-Monitor',
+        description: 'Offline-first crew health console with a separate pretend sensor page and on-device assistant',
         theme_color: '#08090c',
         background_color: '#08090c',
         display: 'standalone',
@@ -50,20 +51,40 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest}'],
+        globIgnores: ['**/model-config.json', '**/webllm.worker-*.js'],
+        maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
         cleanupOutdatedCaches: true,
-        navigateFallback: '/index.html'
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/\/sensors\.html$/, /\/relay$/]
       }
     })
   ],
+  build: {
+    target: 'esnext',
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        sensors: resolve(__dirname, 'sensors.html')
+      }
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'esnext'
+    }
+  },
+  worker: {
+    format: 'es'
+  },
   server: {
     port: 5173,
-    host: true, // Listen on all local IP addresses so phones on the hotspot can connect!
-    proxy: ollamaProxy
+    host: true,
+    proxy: relayProxy
   },
   preview: {
     port: 4173,
     host: true,
-    proxy: ollamaProxy
+    proxy: relayProxy
   }
 });

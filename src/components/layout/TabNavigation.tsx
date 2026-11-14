@@ -1,13 +1,13 @@
 import React from 'react';
-import { Activity, Cpu, FlaskConical, LucideIcon, Stethoscope } from 'lucide-react';
+import { Activity, BookOpen, LucideIcon, Settings, Stethoscope } from 'lucide-react';
 
-export type AppTab = 'telemetry' | 'surgeon' | 'setup' | 'lab';
+export type AppTab = 'telemetry' | 'surgeon' | 'settings' | 'lab';
 
 const TABS: { id: AppTab; label: string; shortLabel: string; icon: LucideIcon }[] = [
-  { id: 'telemetry', label: 'Live telemetry', shortLabel: 'Telemetry', icon: Activity },
+  { id: 'telemetry', label: 'Live readings', shortLabel: 'Readings', icon: Activity },
   { id: 'surgeon', label: 'Flight surgeon', shortLabel: 'Surgeon', icon: Stethoscope },
-  { id: 'setup', label: 'Pairing', shortLabel: 'Pairing', icon: Cpu },
-  { id: 'lab', label: 'Virtual lab', shortLabel: 'Lab', icon: FlaskConical }
+  { id: 'settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
+  { id: 'lab', label: 'How it works', shortLabel: 'Guide', icon: BookOpen }
 ];
 
 interface TabNavigationProps {

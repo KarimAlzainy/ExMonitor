@@ -272,11 +272,11 @@ export const NASA_SYMPTOM_PROTOCOLS: SymptomRuleCard[] = [
         status: isIrregular ? 'Urgent Alert' : 'Caution',
         color: isIrregular ? 'crimson' : 'amber',
         diagnosis: isIrregular
-          ? `Acute Paroxysmal Tachycardia or Heart Block detected by 3-lead ECG strap (Current HR: ${vitals.heartRate} BPM).`
+          ? `Acute Paroxysmal Tachycardia or Heart Block seen in the ECG trace (Current HR: ${vitals.heartRate} BPM).`
           : `Premature Ventricular Contractions (PVCs) likely induced by caffeine, microgravity electrolyte shifts, or stress.`,
         steps: [
           'Perform modified Valsalva maneuver (bearing down for 10-15 seconds).',
-          'Check pulse manually on radial artery to corroborate chest strap reading.',
+          'Check the pulse manually on the radial artery to confirm the sensor reading.',
           'Prepare automated external defibrillator (AED) in habitat if dizziness accompanies.',
           'Transmit 60-second 3-lead ECG strip to ground medical team.'
         ],

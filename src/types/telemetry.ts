@@ -1,31 +1,35 @@
 export type AlertSeverity = 'nominal' | 'caution' | 'critical';
 
 export interface VitalsData {
-  heartRate: number;        // BPM (e.g., 60 - 180)
-  spO2: number;             // % (e.g., 85 - 100%)
-  bodyTemp: number;         // Celsius (e.g., 36.0 - 39.5°C)
-  gsrStress: number;        // Galvanic Skin Response (microSiemens uS, e.g., 1.5 - 28.0)
-  radiationDoseRate: number;// mSv/hr (NASA MR092L, e.g. 0.01 - 5.00 mSv/hr)
-  cumulativeRadiation: number; // mSv (Total accumulated mission dose)
+  heartRate: number;
+  spO2: number;
+  bodyTemp: number;
+  gsrStress: number;
+  radiationDoseRate: number;
+  cumulativeRadiation: number;
   timestamp: number;
+  signalQuality: number;
+  source: 'sensor' | 'builtin';
 }
 
-export interface AstronautProfile {
+export interface CrewProfile {
   id: string;
   name: string;
-  role: 'Commander' | 'EVA Specialist' | 'Flight Engineer' | 'Science Officer';
-  strapSerial: string;
-  isPaired: boolean;
-  avatarUrl?: string;
+  label: string;
+  sensorId: string | null;
+  notificationsAsked: boolean;
+  createdAt: number;
+  completedAt: number | null;
 }
 
-export type AiModelTier = 'phi3' | 'llama3' | 'gemma2' | 'hardcoded_rules';
+export type AiModelTier = 'phi3' | 'llama3' | 'gemma2' | 'none';
 
 export interface SystemDiagnostic {
   estimatedRamGb: number;
   cpuCores: number;
   availableStorageGb: number;
   gpuTier: string;
+  webGpu: boolean;
   recommendedModel: AiModelTier;
 }
 
@@ -33,7 +37,7 @@ export interface EmergencyEvent {
   id: string;
   sourceNodeId: string;
   astronautName: string;
-  astronautRole: string;
+  astronautLabel: string;
   timestamp: number;
   severity: 'critical' | 'caution';
   title: string;
@@ -52,4 +56,44 @@ export interface ChatMessage {
   isStreaming?: boolean;
 }
 
-export type SimulationPreset = 'normal' | 'workout' | 'emergency';
+export interface OwnAlert {
+  event: EmergencyEvent;
+  status: 'sending' | 'sent' | 'cancelled';
+  acknowledgedBy: string[];
+}
+
+export type SensorStatus = 'off' | 'waiting' | 'connected' | 'stale';
+
+export type SensorScenario = 'rest' | 'exercise' | 'hypoxia' | 'radiation' | 'recovery';
+
+export interface SensorFrame {
+  sensorId: string;
+  seq: number;
+  sentAt: number;
+  heartRate: number;
+  spO2: number;
+  bodyTemp: number;
+  gsrStress: number;
+  radiationDoseRate: number;
+  cumulativeRadiation: number;
+  signalQuality: number;
+  battery: number;
+  motion: number;
+  scenario: SensorScenario;
+  ecg: number[];
+  ppg: number[];
+}
+
+export interface PeerNode {
+  nodeId: string;
+  name: string;
+  label: string;
+  seenAt: number;
+}
+
+export interface BundleModelConfig {
+  model: AiModelTier;
+  version: string;
+  builtAt: string;
+  source?: string;
+}

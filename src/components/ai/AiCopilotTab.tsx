@@ -1,9 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, Flame, HeartPulse, Loader2, LucideIcon, Radiation, Send, Wind } from 'lucide-react';
+import {
+  Activity,
+  Flame,
+  HeartPulse,
+  Loader2,
+  LucideIcon,
+  Radiation,
+  Send,
+  Wind
+} from 'lucide-react';
 import { ChatMessage } from '../../types/telemetry';
 import { NASA_SYMPTOM_PROTOCOLS, SymptomRuleCard } from '../../services/nasaRules';
-import { checkOllamaAvailability, streamMedicalTriage } from '../../services/ollamaClient';
+import { buildRulesAnswer, modelName, streamRulesAnswer } from '../../services/aiModels';
+import { askFlightSurgeon, isModelReady, prepareModel } from '../../services/flightSurgeon';
 import { useTelemetry } from '../../context/TelemetryContext';
+import { InfoTip } from '../ui/InfoTip';
 
 type ActionCard = ReturnType<SymptomRuleCard['evaluate']> & { name: string; description?: string };
 
@@ -11,14 +22,14 @@ type UiMessage = ChatMessage & { actionCard?: ActionCard };
 
 const QUICK_SYMPTOMS: { id: string; label: string; icon: LucideIcon }[] = [
   { id: 'chest_pain', label: 'Chest pain', icon: HeartPulse },
-  { id: 'dizziness_hypoxia', label: 'Dizziness / hypoxia', icon: Wind },
-  { id: 'fatigue_heat', label: 'Exhaustion / overheating', icon: Flame },
-  { id: 'radiation_alert', label: 'Radiation flare', icon: Radiation },
-  { id: 'arrhythmia', label: 'Arrhythmia', icon: Activity }
+  { id: 'dizziness_hypoxia', label: 'Dizziness', icon: Wind },
+  { id: 'fatigue_heat', label: 'Heat and fatigue', icon: Flame },
+  { id: 'radiation_alert', label: 'Radiation', icon: Radiation },
+  { id: 'arrhythmia', label: 'Irregular pulse', icon: Activity }
 ];
 
-// Rules mode still has to understand free text. These tags let a typed
-// symptom resolve to the matching pre-approved NASA action card.
+// The rules mode still has to understand free text. These tags let a typed
+// symptom resolve to the matching written NASA action card.
 const SYMPTOM_KEYWORDS: Record<string, string[]> = {
   chest_pain: ['chest', 'heart', 'cardiac', 'pressure', 'pain'],
   dizziness_hypoxia: ['dizzy', 'dizziness', 'hypoxia', 'oxygen', 'breath', 'faint', 'lightheaded', 'vision'],
@@ -96,53 +107,53 @@ function RichText({ text }: { text: string }) {
 }
 
 export const AiCopilotTab: React.FC = () => {
-  const { vitals, astronaut, aiModelTier } = useTelemetry();
+  const { vitals, profile, aiModelTier } = useTelemetry();
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
-  const [ollamaLive, setOllamaLive] = useState<boolean | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const [prepareProgress, setPrepareProgress] = useState(0);
+  const [prepareText, setPrepareText] = useState('');
+  const [prepareError, setPrepareError] = useState<string | null>(null);
+  const [modelReady, setModelReady] = useState(() => isModelReady(aiModelTier));
   const [messages, setMessages] = useState<UiMessage[]>([
     {
       id: 'welcome',
       sender: 'system',
-      text: 'The onboard flight surgeon is standing by. Every question carries the live telemetry snapshot. Earth is up to 22 minutes away, so triage runs on this device.',
+      text: 'The on-board assistant is standing by. Every question carries the current readings. Earth is up to 22 minutes away, so the answer is prepared on this device.',
       timestamp: Date.now()
     }
   ]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const rulesMode = aiModelTier === 'hardcoded_rules';
 
-  const tierName =
-    aiModelTier === 'llama3' ? 'Llama-3.2' : aiModelTier === 'gemma2' ? 'Gemma-2' : 'Phi-3';
-
-  const subtitle = rulesMode
-    ? 'Pre-approved NASA action cards, no language model.'
-    : ollamaLive
-      ? `${tierName} is answering on this device with the live snapshot attached.`
-      : ollamaLive === false
-        ? `${tierName} is selected, but Ollama is offline. Answers fall back to the onboard simulation.`
-        : `Checking local Ollama for ${tierName}…`;
-
-  const modelState = rulesMode
-    ? { dot: 'bg-ink-400', label: 'Rules only' }
-    : ollamaLive === null
-      ? { dot: 'bg-ink-500', label: 'Checking model' }
-      : ollamaLive
-        ? { dot: 'bg-positive', label: 'Model on device' }
-        : { dot: 'bg-caution', label: 'Fallback answers' };
+  const rulesMode = aiModelTier === 'none';
+  const tierName = modelName(aiModelTier);
 
   useEffect(() => {
-    let cancelled = false;
-    checkOllamaAvailability().then((result) => {
-      if (!cancelled) setOllamaLive(result.available);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    setModelReady(isModelReady(aiModelTier));
+    setPrepareError(null);
+    setPrepareText('');
+    setPrepareProgress(0);
+  }, [aiModelTier]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  const subtitle = rulesMode
+    ? 'Written NASA action cards and the rules engine. No language model is used.'
+    : preparing
+      ? `Downloading and preparing ${tierName}. This happens once.`
+      : modelReady
+        ? `${tierName} is loaded on this device and answers with the live readings attached.`
+        : `${tierName} is selected. The first question downloads it once, then it works offline.`;
+
+  const modelState = rulesMode
+    ? { dot: 'bg-ink-400', label: 'Rules only' }
+    : preparing
+      ? { dot: 'bg-caution', label: 'Preparing model' }
+      : modelReady
+        ? { dot: 'bg-positive', label: 'Model on device' }
+        : { dot: 'bg-ink-500', label: 'Not loaded' };
 
   const pushUser = (text: string) => {
     const message: UiMessage = {
@@ -152,72 +163,120 @@ export const AiCopilotTab: React.FC = () => {
       timestamp: Date.now(),
       vitalsSnapshot: { ...vitals }
     };
-    setMessages((prev) => [...prev, message]);
+    setMessages((previous) => [...previous, message]);
+  };
+
+  const ensureModel = async (): Promise<boolean> => {
+    if (isModelReady(aiModelTier)) {
+      setModelReady(true);
+      return true;
+    }
+    setPreparing(true);
+    setPrepareError(null);
+    setPrepareProgress(0);
+    setPrepareText('Starting');
+    try {
+      await prepareModel(aiModelTier, (progress) => {
+        setPrepareProgress(progress.progress);
+        setPrepareText(progress.text);
+      });
+      setModelReady(true);
+      setPrepareProgress(1);
+      setPrepareText('Ready');
+      return true;
+    } catch (error) {
+      console.warn('The on-device model could not start.', error);
+      setPrepareError(
+        'The model could not start on this device. The written NASA rules are being used instead.'
+      );
+      setModelReady(false);
+      return false;
+    } finally {
+      setPreparing(false);
+    }
+  };
+
+  const streamRules = async (replyId: string, query: string, protocol?: SymptomRuleCard) => {
+    const evaluation = protocol?.evaluate(vitals);
+    const text = buildRulesAnswer(
+      { userQuery: query, vitals: { ...vitals } },
+      evaluation && protocol
+        ? {
+            name: protocol.name,
+            diagnosis: evaluation.diagnosis,
+            steps: evaluation.steps,
+            nasaCode: evaluation.nasaCode
+          }
+        : undefined
+    );
+    await streamRulesAnswer(text, (token) => {
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.id === replyId ? { ...message, text: message.text + token } : message
+        )
+      );
+    });
   };
 
   const askSurgeon = async (query: string) => {
     const trimmed = query.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed || busy || preparing) return;
+
     pushUser(trimmed);
     setDraft('');
-
-    if (rulesMode) {
-      const protocol = matchProtocol(trimmed);
-      if (protocol) {
-        const evaluation = protocol.evaluate(vitals);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `card-${Date.now()}`,
-            sender: 'system',
-            text: evaluation.diagnosis,
-            timestamp: Date.now(),
-            protocolBadge: evaluation.nasaCode,
-            vitalsSnapshot: { ...vitals },
-            actionCard: { ...evaluation, name: protocol.name, description: protocol.description }
-          }
-        ]);
-        return;
-      }
-    }
-
-    const replyId = `ai-${Date.now()}`;
     setBusy(true);
-    setMessages((prev) => [
-      ...prev,
+
+    const replyId = `reply-${Date.now()}`;
+    setMessages((previous) => [
+      ...previous,
       {
         id: replyId,
-        sender: 'ai',
+        sender: rulesMode ? 'system' : 'ai',
         text: '',
         timestamp: Date.now(),
         isStreaming: true,
-        vitalsSnapshot: { ...vitals },
+        vitalsSnapshot: { ...vitals, },
         protocolBadge: rulesMode ? 'NASA rules' : 'Flight surgeon'
       }
     ]);
 
     try {
-      await streamMedicalTriage(
-        { userQuery: trimmed, vitals: { ...vitals }, astronaut, modelTier: aiModelTier },
+      if (rulesMode) {
+        await streamRules(replyId, trimmed, matchProtocol(trimmed));
+        return;
+      }
+
+      const ready = await ensureModel();
+      if (!ready) {
+        await streamRules(replyId, trimmed, matchProtocol(trimmed));
+        return;
+      }
+
+      await askFlightSurgeon(
+        { userQuery: trimmed, vitals: { ...vitals }, profile },
         (token) => {
-          setMessages((prev) =>
-            prev.map((message) =>
+          setMessages((previous) =>
+            previous.map((message) =>
               message.id === replyId ? { ...message, text: message.text + token } : message
             )
           );
         }
       );
-    } catch {
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === replyId
-            ? { ...message, text: 'Flight surgeon link failed. Use a symptom card or switch to No-AI rules in Pairing.' }
+    } catch (error) {
+      console.warn('The flight surgeon reply failed.', error);
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.id === replyId && !message.text
+            ? {
+                ...message,
+                text: 'The assistant could not answer. Open one of the symptom cards above for the written NASA steps, or switch to No AI in Settings.'
+              }
             : message
         )
       );
     } finally {
-      setMessages((prev) =>
-        prev.map((message) => (message.id === replyId ? { ...message, isStreaming: false } : message))
+      setMessages((previous) =>
+        previous.map((message) => (message.id === replyId ? { ...message, isStreaming: false } : message))
       );
       setBusy(false);
     }
@@ -229,8 +288,8 @@ export const AiCopilotTab: React.FC = () => {
 
     if (rulesMode) {
       const evaluation = protocol.evaluate(vitals);
-      setMessages((prev) => [
-        ...prev,
+      setMessages((previous) => [
+        ...previous,
         {
           id: `user-${Date.now()}`,
           sender: 'astronaut',
@@ -256,7 +315,7 @@ export const AiCopilotTab: React.FC = () => {
 
   const roleLabel = (message: UiMessage) =>
     message.sender === 'astronaut'
-      ? astronaut.name
+      ? profile.name || 'Crew member'
       : message.sender === 'ai'
         ? 'Flight surgeon'
         : message.actionCard
@@ -267,7 +326,13 @@ export const AiCopilotTab: React.FC = () => {
     <div className="flex min-h-[70vh] flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-[15px] font-medium text-ink-100">Flight surgeon</h2>
+          <h2 className="flex items-center gap-2 text-[15px] font-medium text-ink-100">
+            Flight surgeon
+            <InfoTip
+              text="The assistant runs entirely in this browser. With AI selected, the model downloads once on first use and is then cached for offline use. The written NASA rules always work without it."
+              label="Flight surgeon"
+            />
+          </h2>
           <p className="mt-1 max-w-xl text-[12px] leading-5 text-ink-400">{subtitle}</p>
         </div>
         <p className="flex items-center gap-1.5 text-[11px] text-ink-400">
@@ -279,14 +344,37 @@ export const AiCopilotTab: React.FC = () => {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2 text-[11px] text-ink-400">
         <span className="flex items-center gap-1.5 text-ink-300">
           <span className="h-1.5 w-1.5 rounded-full bg-positive" />
-          Live snapshot
+          Live readings
         </span>
         <span className="font-mono tabular-nums">HR {vitals.heartRate} BPM</span>
         <span className="font-mono tabular-nums">SpO2 {vitals.spO2}%</span>
         <span className="font-mono tabular-nums">{vitals.bodyTemp.toFixed(1)}°C</span>
         <span className="font-mono tabular-nums">GSR {vitals.gsrStress.toFixed(1)} µS</span>
         <span className="font-mono tabular-nums">Rad {vitals.radiationDoseRate.toFixed(2)} mSv/hr</span>
+        <span className="text-ink-500">{vitals.source === 'sensor' ? 'From the sensor' : 'Practice readings'}</span>
       </div>
+
+      {preparing && (
+        <div className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-medium text-caution">Downloading {tierName} for the first time</p>
+            <p className="font-mono text-[10.5px] text-ink-500">{Math.round(prepareProgress * 100)}%</p>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-space-800">
+            <div
+              className="h-full rounded-full bg-caution transition-[width] duration-300"
+              style={{ width: `${Math.max(3, Math.round(prepareProgress * 100))}%` }}
+            />
+          </div>
+          <p className="mt-1.5 truncate text-[10.5px] text-ink-500">{prepareText}</p>
+        </div>
+      )}
+
+      {prepareError && !preparing && (
+        <p className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-2.5 text-[11px] leading-5 text-caution">
+          {prepareError}
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {QUICK_SYMPTOMS.map((symptom) => {
@@ -295,7 +383,7 @@ export const AiCopilotTab: React.FC = () => {
             <button
               key={symptom.id}
               type="button"
-              disabled={busy}
+              disabled={busy || preparing}
               onClick={() => onQuickSymptom(symptom.id)}
               className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12px] text-ink-300 transition-colors hover:border-white/15 hover:bg-space-850 hover:text-ink-100 disabled:opacity-40"
             >
@@ -364,8 +452,8 @@ export const AiCopilotTab: React.FC = () => {
               {message.sender === 'astronaut' && message.vitalsSnapshot && (
                 <p className="mt-2 font-mono text-[10px] text-ink-500">
                   Snapshot HR {message.vitalsSnapshot.heartRate} · SpO2 {message.vitalsSnapshot.spO2}% ·{' '}
-                  {message.vitalsSnapshot.bodyTemp.toFixed(1)}°C · GSR {message.vitalsSnapshot.gsrStress.toFixed(1)} · Rad{' '}
-                  {message.vitalsSnapshot.radiationDoseRate.toFixed(2)}
+                  {message.vitalsSnapshot.bodyTemp.toFixed(1)}°C · GSR {message.vitalsSnapshot.gsrStress.toFixed(1)} ·
+                  Rad {message.vitalsSnapshot.radiationDoseRate.toFixed(2)}
                 </p>
               )}
               {message.isStreaming && <Loader2 className="mt-2 h-3.5 w-3.5 animate-spin text-ink-500" />}
@@ -384,19 +472,27 @@ export const AiCopilotTab: React.FC = () => {
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={rulesMode ? 'Describe a symptom, or use a card above' : 'Report a symptom to the flight surgeon'}
+          placeholder={
+            rulesMode
+              ? 'Describe a symptom, or use a card above'
+              : `Ask ${tierName}, or use a card above`
+          }
           aria-label="Symptom report"
           className="h-9 min-w-0 flex-1 bg-transparent text-[13px] text-ink-100 outline-none placeholder:text-ink-500"
         />
         <button
           type="submit"
-          disabled={busy || !draft.trim()}
+          disabled={busy || preparing || !draft.trim()}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-100 text-space-950 transition-colors hover:bg-white disabled:opacity-40"
-          aria-label="Send to flight surgeon"
+          aria-label="Send to the flight surgeon"
         >
           <Send className="h-4 w-4" strokeWidth={1.5} />
         </button>
       </form>
+
+      <p className="text-[10.5px] leading-5 text-ink-500">
+        Training simulation only. It does not replace a real flight surgeon or mission medical rules.
+      </p>
     </div>
   );
 };

@@ -1,8 +1,10 @@
 import React from 'react';
 import { AlertSeverity } from '../../types/telemetry';
+import { InfoTip } from '../ui/InfoTip';
 
 interface VitalCardProps {
   label: string;
+  tip?: string;
   meta: string;
   value: string | number;
   unit: string;
@@ -29,24 +31,27 @@ const TONE = {
 } as const;
 
 const LABEL = {
-  nominal: 'Nominal',
-  caution: 'Caution',
+  nominal: 'Normal',
+  caution: 'Watch',
   critical: 'Critical'
 } as const;
 
-export const VitalCard: React.FC<VitalCardProps> = ({ label, meta, value, unit, severity, range }) => {
+export const VitalCard: React.FC<VitalCardProps> = ({ label, tip, meta, value, unit, severity, range }) => {
   const tone = TONE[severity] ?? TONE.nominal;
 
   return (
     <div className={`flex h-full flex-col rounded-xl border bg-space-900 p-5 ${tone.border}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[12px] font-medium text-ink-200">{label}</p>
+          <p className="flex items-center text-[12px] font-medium text-ink-200">
+            {label}
+            {tip && <InfoTip text={tip} label={label} />}
+          </p>
           <p className="mt-0.5 truncate text-[11px] text-ink-500">{meta}</p>
         </div>
         <span className={`flex shrink-0 items-center gap-1.5 pt-0.5 text-[11px] ${tone.text}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
-          {LABEL[severity] ?? 'Nominal'}
+          {LABEL[severity] ?? 'Normal'}
         </span>
       </div>
 
