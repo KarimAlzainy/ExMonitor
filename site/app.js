@@ -2,31 +2,37 @@ const MODELS = [
   {
     id: 'phi3',
     name: 'Phi-3.5 mini',
-    file: 'ex-monitor-phi3.zip',
+    file: 'ex-monitor-phi3',
     download: 'about 2.1 GB',
     note: 'The strongest answers. Best on a recent laptop with 8 GB of memory or more.'
   },
   {
     id: 'llama3',
     name: 'Llama 3.2 3B',
-    file: 'ex-monitor-llama3.zip',
+    file: 'ex-monitor-llama3',
     download: 'about 1.8 GB',
     note: 'A balance of speed and detail. Works on most recent laptops.'
   },
   {
     id: 'gemma2',
     name: 'Gemma 2 2B',
-    file: 'ex-monitor-gemma2.zip',
+    file: 'ex-monitor-gemma2',
     download: 'about 1.5 GB',
     note: 'The smallest AI download. Best when the device has limited memory.'
   },
   {
     id: 'none',
     name: 'No AI',
-    file: 'ex-monitor-no-ai.zip',
+    file: 'ex-monitor-no-ai',
     download: 'nothing',
     note: 'Written NASA action cards only. Works on every device and never needs the internet.'
   }
+];
+
+const PLATFORMS = [
+  { id: 'windows', name: 'Windows' },
+  { id: 'macos', name: 'macOS' },
+  { id: 'linux', name: 'Linux' }
 ];
 
 const state = {
@@ -35,17 +41,41 @@ const state = {
   cores: null,
   webgpu: null,
   gpu: '',
+  platform: 'windows',
+  phone: false,
   manifest: null,
   scanned: false
 };
 
 const byId = (id) => document.getElementById(id);
 
+function platformName(id) {
+  return PLATFORMS.find((platform) => platform.id === id)?.name ?? 'Windows';
+}
+
 function modelById(id) {
   return MODELS.find((model) => model.id === id) ?? MODELS[MODELS.length - 1];
 }
 
+function detectDevice() {
+  const agent = navigator.userAgent;
+  const coarse = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+  const phone =
+    /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(agent) ||
+    (coarse && /Macintosh/i.test(agent));
+
+  state.phone = phone;
+  if (phone) {
+    state.platform = 'windows';
+    return;
+  }
+  if (/Windows/i.test(agent)) state.platform = 'windows';
+  else if (/Mac OS X|Macintosh/i.test(agent)) state.platform = 'macos';
+  else state.platform = 'linux';
+}
+
 function recommendedTier() {
+  if (state.phone) return 'none';
   if (state.webgpu === false) return 'none';
   if (state.memory == null) {
     if ((state.cores ?? 0) >= 8) return 'phi3';
@@ -56,6 +86,13 @@ function recommendedTier() {
   if (state.memory >= 4) return 'llama3';
   if (state.memory >= 2) return 'gemma2';
   return 'none';
+}
+
+function fileFor(modelId, platformId) {
+  const entry = state.manifest?.files?.[modelId];
+  if (!entry) return null;
+  if (platformId && entry[platformId]) return entry[platformId];
+  return Object.values(entry)[0] ?? null;
 }
 
 function renderModels() {
@@ -114,16 +151,35 @@ function selectTier(tier) {
 
 function updateDownload() {
   const model = modelById(state.tier);
-  const file = state.manifest?.files?.[model.id];
-  const zip = file?.file ?? model.file;
+  const file = fileFor(model.id, state.platform);
+  const zip = file?.file ?? `${model.file}-${state.platform}.zip`;
   const button = byId('download-button');
+  const openButton = byId('open-button');
   const meta = byId('download-meta');
+  const note = byId('device-note');
+  const osLine = byId('os-line');
+  const osSelect = byId('os-select');
 
   if (button) {
     button.href = `/downloads/${zip}`;
     button.setAttribute('download', zip);
-    button.textContent = `Download for ${model.name}`;
+    button.textContent = state.phone
+      ? 'Download for a computer'
+      : `Download for ${platformName(state.platform)}`;
+    button.classList.toggle('button-primary', !state.phone);
+    button.classList.toggle('button-quiet', state.phone);
   }
+
+  if (openButton) {
+    openButton.href = `/app/?model=${model.id}`;
+    openButton.textContent = state.phone ? 'Open Ex-Monitor now' : 'Open in this browser';
+    openButton.classList.toggle('button-primary', state.phone);
+    openButton.classList.toggle('button-quiet', !state.phone);
+  }
+
+  if (note) note.hidden = !state.phone;
+  if (osLine) osLine.hidden = state.phone;
+  if (osSelect && !state.phone) osSelect.value = state.platform;
 
   if (!meta) return;
   const size =
@@ -151,22 +207,26 @@ function updateDevice() {
       ? 'Checking'
       : state.webgpu
         ? state.gpu
-          ? `WebGPU · ${state.gpu}`
+          ? `WebGPU ready · ${state.gpu}`
           : 'WebGPU ready'
-        : 'WebGPU not available';
+        : 'Not available';
 
-  if (state.webgpu === false) {
+  if (state.phone) {
+    summary.textContent =
+      'This is a phone browser. Open the copy below and add it to the home screen; the ZIP is for a computer.';
+  } else if (state.webgpu === false) {
     summary.textContent =
       'This browser cannot run the on-device models. No AI is the safe choice, and the written NASA rules still work. You can pick an AI copy for a different computer.';
   } else if (state.webgpu == null) {
-    summary.textContent = 'Checking what this browser can do…';
+    summary.textContent = 'Checking what this browser can do...';
   } else if (state.memory == null) {
-    summary.textContent = `${suggested.name} is a cautious suggestion for this computer because memory was not reported. You can choose another.`;
+    summary.textContent = `${suggested.name} is a cautious suggestion for this device because memory was not reported. You can choose another.`;
   } else {
-    summary.textContent = `${suggested.name} fits this computer best. You can choose another copy.`;
+    summary.textContent = `${suggested.name} fits this device best. You can choose another copy.`;
   }
 
   const rows = [
+    ['System', state.phone ? 'Phone browser' : platformName(state.platform)],
     ['WebGPU', gpuText],
     ['Memory', memoryText],
     ['Processor', coreText],
@@ -187,7 +247,7 @@ function updateDevice() {
 
 async function scanDevice() {
   const summary = byId('device-summary');
-  if (summary) summary.textContent = 'Checking this browser…';
+  if (summary) summary.textContent = 'Checking this browser...';
 
   state.memory = typeof navigator.deviceMemory === 'number' ? navigator.deviceMemory : null;
   state.cores = typeof navigator.hardwareConcurrency === 'number' ? navigator.hardwareConcurrency : null;
@@ -256,8 +316,17 @@ function bindKeyboard() {
   });
 }
 
+detectDevice();
+
 byId('rescan')?.addEventListener('click', () => {
   void scanDevice();
+});
+
+byId('os-select')?.addEventListener('change', (event) => {
+  const value = event.target instanceof HTMLSelectElement ? event.target.value : 'windows';
+  state.platform = PLATFORMS.some((platform) => platform.id === value) ? value : 'windows';
+  updateDownload();
+  updateDevice();
 });
 
 renderModels();

@@ -1,6 +1,44 @@
+import { RelayRoom } from './relayRoom.js';
+
+export { RelayRoom };
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === '/relay') {
+      const upgrade = request.headers.get('upgrade');
+      if (!upgrade || upgrade.toLowerCase() !== 'websocket') {
+        return new Response('This address is for the crew link. Open the console instead.', {
+          status: 426,
+          headers: { 'content-type': 'text/plain; charset=utf-8' }
+        });
+      }
+
+      const room = env.RELAY.get(env.RELAY.idFromName('crew-link'));
+      return room.fetch(request);
+    }
+
+    if (url.pathname === '/health') {
+      let clients = 0;
+      try {
+        const room = env.RELAY.get(env.RELAY.idFromName('crew-link'));
+        const stats = await room.fetch('https://relay.internal/stats');
+        const data = await stats.json();
+        if (typeof data?.clients === 'number') clients = data.clients;
+      } catch {
+        // Health must answer even when the room is cold.
+      }
+
+      return Response.json({
+        service: 'Ex-Monitor crew link relay',
+        status: 'online',
+        app: true,
+        hosted: true,
+        clients,
+        time: new Date().toISOString()
+      });
+    }
 
     if (url.pathname.startsWith('/downloads/')) {
       const key = decodeURIComponent(url.pathname.slice('/downloads/'.length));

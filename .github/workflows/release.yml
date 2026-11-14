@@ -31,7 +31,10 @@ jobs:
       - name: Build the app
         run: npm run build
 
-      - name: Package one ZIP per assistant choice
+      - name: Build the hosted copy at /app/
+        run: npm run build:hosted
+
+      - name: Package one ZIP per assistant and system
         run: node scripts/package-bundles.mjs --out bundles --manifest site/downloads.json
 
       - name: Keep the ZIPs as a workflow artifact

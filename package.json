@@ -10,6 +10,8 @@
     "relay": "node server.js --relay-only --port 8080",
     "start": "node server.js",
     "package:bundles": "node scripts/package-bundles.mjs",
+    "build:hosted": "node scripts/build-hosted.mjs",
+    "site:build": "npm run build && npm run build:hosted && npm run package:bundles",
     "site:dev": "npx wrangler dev",
     "site:deploy": "npx wrangler deploy"
   },

@@ -119,11 +119,33 @@ function bundleStamp(bundle: BundleModelConfig): string {
 }
 
 /**
+ * The download page links to the hosted copy as /app/?model=phi3. Apply that
+ * choice once, keep it, and remove it from the address so a later choice in
+ * Settings is not overridden on every reload.
+ */
+function takeRequestedTier(): AiModelTier | null {
+  try {
+    const address = new URL(window.location.href);
+    const value = address.searchParams.get('model');
+    if (!isTier(value)) return null;
+    address.searchParams.delete('model');
+    window.history.replaceState(null, '', `${address.pathname}${address.search}${address.hash}`);
+    storeTier(value);
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * A freshly downloaded ZIP must win over an older choice kept in the browser.
  * The bundle carries a build stamp, so the default changes only when the
  * packaged app changes.
  */
 export async function resolveInitialTier(): Promise<AiModelTier> {
+  const requested = takeRequestedTier();
+  if (requested) return requested;
+
   const bundle = await loadBundleModel();
   const stored = readStoredTier();
 

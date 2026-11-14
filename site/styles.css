@@ -632,6 +632,46 @@ h1 {
   background: var(--panel-deep);
 }
 
+.download-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.device-note {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.os-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.os-line select {
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+
+.os-line select:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--ink);
+}
+
 .download-meta {
   margin: 14px 0 0;
   color: var(--ink-soft);

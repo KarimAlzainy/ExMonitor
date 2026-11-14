@@ -85,6 +85,8 @@ function showInPage(title: string, options: NotificationOptions): boolean {
   }
 }
 
+const ICON = `${import.meta.env.BASE_URL}pwa-192x192.png`;
+
 export async function showAlertNotification(event: EmergencyEvent): Promise<boolean> {
   if (alertPermission() !== 'granted') return false;
 
@@ -92,8 +94,8 @@ export async function showAlertNotification(event: EmergencyEvent): Promise<bool
   const options: NotificationOptions = {
     body: `${event.title}. Open Ex-Monitor to see the readings and acknowledge.`,
     tag: event.id,
-    icon: '/pwa-192x192.png',
-    badge: '/pwa-192x192.png',
+    icon: ICON,
+    badge: ICON,
     requireInteraction: true,
     silent: false
   };
@@ -107,7 +109,7 @@ export async function showTestNotification(): Promise<boolean> {
   const options: NotificationOptions = {
     body: 'Alerts from other crew devices will appear like this while Ex-Monitor is open.',
     tag: 'exmonitor-test',
-    icon: '/pwa-192x192.png'
+    icon: ICON
   };
   if (showInPage('Ex-Monitor alerts are on', options)) return true;
   return showWithServiceWorker('Ex-Monitor alerts are on', options);

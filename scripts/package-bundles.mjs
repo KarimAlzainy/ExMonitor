@@ -5,13 +5,15 @@ import { fileURLToPath } from 'node:url';
 import { ZipArchive } from 'archiver';
 
 /**
- * Builds one ZIP per assistant choice. Every ZIP contains the latest built app
- * plus a model-config.json that selects the assistant chosen on the download
- * page. The model itself is fetched once by the browser on first use.
+ * Builds one ZIP per assistant choice and operating system. Every ZIP contains
+ * the latest built app, exactly one start file for that system, and a
+ * model-config.json that selects the assistant chosen on the download page.
+ * The model itself is fetched once by the browser on first use.
  *
  *   node scripts/package-bundles.mjs
  *   node scripts/package-bundles.mjs --out bundles --manifest site/downloads.json
  *   node scripts/package-bundles.mjs --models phi3,none
+ *   node scripts/package-bundles.mjs --platforms windows
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -34,34 +36,38 @@ const selection = argValue('--models', 'phi3,llama3,gemma2,none')
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
+const platformSelection = argValue('--platforms', 'windows,macos,linux')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 const MODELS = [
   {
     id: 'phi3',
     title: 'Phi-3.5 mini',
     folder: 'Ex-Monitor-Phi-3.5',
-    zip: 'ex-monitor-phi3.zip',
+    zip: 'ex-monitor-phi3',
     download: 'about 2.1 GB'
   },
   {
     id: 'llama3',
     title: 'Llama 3.2 3B',
     folder: 'Ex-Monitor-Llama-3.2',
-    zip: 'ex-monitor-llama3.zip',
+    zip: 'ex-monitor-llama3',
     download: 'about 1.8 GB'
   },
   {
     id: 'gemma2',
     title: 'Gemma 2 2B',
     folder: 'Ex-Monitor-Gemma-2',
-    zip: 'ex-monitor-gemma2.zip',
+    zip: 'ex-monitor-gemma2',
     download: 'about 1.5 GB'
   },
   {
     id: 'none',
     title: 'No AI',
     folder: 'Ex-Monitor-No-AI',
-    zip: 'ex-monitor-no-ai.zip',
+    zip: 'ex-monitor-no-ai',
     download: 'nothing'
   }
 ];
@@ -77,12 +83,7 @@ if (unknown.length) {
   process.exit(1);
 }
 
-fs.mkdirSync(outDir, { recursive: true });
-
-const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-const builtAt = new Date().toISOString();
-
-const startCmd = `@echo off
+const startWindows = `@echo off
 setlocal
 cd /d "%~dp0"
 
@@ -102,11 +103,11 @@ pause
 exit /b 1
 `;
 
-const startSh = `#!/bin/sh
+const startShell = `#!/bin/sh
 cd "$(dirname "$0")" || exit 1
 
 if ! command -v node >/dev/null 2>&1; then
-  printf '%s\n' "Node.js 18 or newer is needed to run Ex-Monitor." "Install it from https://nodejs.org and run this file again."
+  printf '%s\\n' "Node.js 18 or newer is needed to run Ex-Monitor." "Install it from https://nodejs.org and run this file again."
   read -r _
   exit 1
 fi
@@ -114,19 +115,48 @@ fi
 node server.js
 `;
 
-const startCommand = `#!/bin/sh
-cd "$(dirname "$0")" || exit 1
+const PLATFORMS = [
+  {
+    id: 'windows',
+    title: 'Windows',
+    folderSuffix: 'Windows',
+    launcher: 'Start Ex-Monitor.cmd',
+    content: startWindows,
+    mode: undefined,
+    howToStart: 'Double-click "Start Ex-Monitor.cmd".'
+  },
+  {
+    id: 'macos',
+    title: 'macOS',
+    folderSuffix: 'macOS',
+    launcher: 'Start Ex-Monitor.command',
+    content: startShell,
+    mode: 0o755,
+    howToStart:
+      'Double-click "Start Ex-Monitor.command". If macOS says it cannot be opened, right-click it, choose Open, then Open again.'
+  },
+  {
+    id: 'linux',
+    title: 'Linux',
+    folderSuffix: 'Linux',
+    launcher: 'start-ex-monitor.sh',
+    content: startShell,
+    mode: 0o755,
+    howToStart: 'Run ./start-ex-monitor.sh in a terminal from this folder.'
+  }
+];
 
-if ! command -v node >/dev/null 2>&1; then
-  printf '%s\n' "Node.js 18 or newer is needed to run Ex-Monitor." "Install it from https://nodejs.org and run this file again."
-  read -r _
-  exit 1
-fi
+if (platformSelection.some((id) => !PLATFORMS.some((platform) => platform.id === id))) {
+  console.error(`Unknown platform id(s): ${platformSelection.join(', ')}`);
+  process.exit(1);
+}
 
-node server.js
-`;
+fs.mkdirSync(outDir, { recursive: true });
 
-function readmeFor(model) {
+const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+const builtAt = new Date().toISOString();
+
+function readmeFor(model, platform) {
   const assistant =
     model.id === 'none'
       ? [
@@ -149,15 +179,21 @@ function readmeFor(model) {
     'Ex-Monitor - crew health console',
     '================================',
     '',
+    `This download is made for: ${platform.title}`,
+    '',
     ...assistant,
     '',
     'How to start',
     '------------',
     '1. Install Node.js 18 or newer from https://nodejs.org if it is not installed.',
-    '2. Windows: double-click "Start Ex-Monitor.cmd".',
-    '   macOS: double-click "Start Ex-Monitor.command".',
-    '   Linux: run ./start-ex-monitor.sh in a terminal.',
+    `2. ${platform.howToStart}`,
     '3. A browser opens at http://localhost:8080.',
+    '',
+    'Opening it on a phone (no install)',
+    '----------------------------------',
+    'Open https://exmonitor.extem.net/app/ in the phone browser.',
+    'That version works on the phone itself and includes the sensor page.',
+    'Tap "Add to Home screen" to get one icon that opens the console full screen.',
     '',
     'Using a phone as the body sensor',
     '--------------------------------',
@@ -168,7 +204,7 @@ function readmeFor(model) {
     '',
     'Alerts',
     '------',
-    'Other consoles on the same network show a full-screen alert until each one',
+    'Other consoles on the same crew link show a full-screen alert until each one',
     'acknowledges it. The sender sees a small sent panel and can cancel the alert',
     'for everyone.',
     '',
@@ -184,15 +220,16 @@ function readmeFor(model) {
   ].join('\n');
 }
 
-function createZip(model) {
-  const zipPath = path.join(outDir, model.zip);
-  const rootName = model.folder;
+function createZip(model, platform) {
+  const file = `${model.zip}-${platform.id}.zip`;
+  const zipPath = path.join(outDir, file);
+  const rootName = `${model.folder}-${platform.folderSuffix}`;
 
   return new Promise((resolve, reject) => {
     const output = fs.createWriteStream(zipPath);
     const archive = new ZipArchive({ zlib: { level: 9 } });
 
-    output.on('close', () => resolve(zipPath));
+    output.on('close', () => resolve({ file, zipPath }));
     output.on('error', reject);
     archive.on('error', reject);
     archive.on('warning', (error) => {
@@ -201,11 +238,12 @@ function createZip(model) {
     });
 
     archive.pipe(output);
-    archive.append(readmeFor(model), { name: `${rootName}/README.txt` });
+    archive.append(readmeFor(model, platform), { name: `${rootName}/README.txt` });
     archive.append(serverSource, { name: `${rootName}/server.js` });
-    archive.append(startCmd, { name: `${rootName}/Start Ex-Monitor.cmd` });
-    archive.append(startCommand, { name: `${rootName}/Start Ex-Monitor.command`, mode: 0o755 });
-    archive.append(startSh, { name: `${rootName}/start-ex-monitor.sh`, mode: 0o755 });
+    archive.append(platform.content, {
+      name: `${rootName}/${platform.launcher}`,
+      mode: platform.mode
+    });
 
     archive.directory(distDir, `${rootName}/app`, (entry) =>
       entry.name === 'model-config.json' ? false : entry
@@ -215,6 +253,7 @@ function createZip(model) {
       JSON.stringify(
         {
           model: model.id,
+          platform: platform.id,
           version,
           builtAt,
           source: process.env.GITHUB_REPOSITORY ? 'github-actions' : 'local'
@@ -240,21 +279,26 @@ function sha256(file) {
 }
 
 const models = MODELS.filter((model) => selection.includes(model.id));
+const platforms = PLATFORMS.filter((platform) => platformSelection.includes(platform.id));
 const files = {};
 
 for (const model of models) {
-  process.stdout.write(`Packaging ${model.title} ... `);
-  const zipPath = await createZip(model);
-  const stats = fs.statSync(zipPath);
-  const digest = await sha256(zipPath);
-  files[model.id] = {
-    file: model.zip,
-    title: model.title,
-    bytes: stats.size,
-    sha256: digest,
-    download: model.download
-  };
-  console.log(`${(stats.size / (1024 * 1024)).toFixed(1)} MB`);
+  files[model.id] = {};
+  for (const platform of platforms) {
+    process.stdout.write(`Packaging ${model.title} for ${platform.title} ... `);
+    const { file, zipPath } = await createZip(model, platform);
+    const stats = fs.statSync(zipPath);
+    const digest = await sha256(zipPath);
+    files[model.id][platform.id] = {
+      file,
+      title: model.title,
+      platform: platform.title,
+      bytes: stats.size,
+      sha256: digest,
+      download: model.download
+    };
+    console.log(`${(stats.size / (1024 * 1024)).toFixed(1)} MB`);
+  }
 }
 
 const manifest = {
@@ -272,11 +316,14 @@ if (copyToSite) {
   }
   fs.mkdirSync(siteOut, { recursive: true });
   for (const model of models) {
-    fs.copyFileSync(path.join(outDir, model.zip), path.join(siteOut, model.zip));
+    for (const platform of platforms) {
+      const file = files[model.id][platform.id].file;
+      fs.copyFileSync(path.join(outDir, file), path.join(siteOut, file));
+    }
   }
   console.log(`Site copies: ${path.relative(root, siteOut)}`);
 }
 
 console.log('');
-console.log(`Wrote ${models.length} ZIP file(s) to ${path.relative(root, outDir) || '.'}`);
+console.log(`Wrote ${models.length * platforms.length} ZIP file(s) to ${path.relative(root, outDir) || '.'}`);
 console.log(`Manifest: ${path.relative(root, manifestPath)}`);

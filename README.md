@@ -3,7 +3,8 @@
 A crew health console for a training simulation. It shows live body readings, sends crew alerts across the
 local network, and can answer questions with a language model that runs entirely in the browser.
 
-No account, no cloud service and no separate AI runtime. The downloaded copy contains the whole app.
+No account, no cloud service and no separate AI runtime. It opens directly in a phone or computer browser at
+<https://exmonitor.extem.net/app/>, or from a downloaded folder that needs nothing installed.
 
 ## Three pieces
 
@@ -11,7 +12,7 @@ No account, no cloud service and no separate AI runtime. The downloaded copy con
 | --- | --- |
 | **Console** (`/`) | Heart trace, five vital cards, the written NASA rules, the flight surgeon and crew alerts. |
 | **Sensor page** (`/sensors.html`) | Turns a phone or second screen into a pretend body sensor. It streams realistic readings eight times a second. |
-| **Crew link** (`/relay`) | One small WebSocket relay inside the launcher. It carries alerts, presence and sensor frames between devices on the same network. |
+| **Crew link** (`/relay`) | A small WebSocket relay inside the launcher, or a Durable Object on the hosted copy. It carries alerts, presence and sensor frames between devices. |
 
 Two tabs in the same browser also reach each other through a local channel, so the relay is optional for a
 quick demo.
@@ -40,9 +41,19 @@ npm run relay     # relay only, port 8080
 npm run dev       # Vite on port 5173, proxying /relay to 8080
 ```
 
+## Use it on a phone
+
+Open <https://exmonitor.extem.net/app/> on the phone. It is the same app, served with HTTPS, so the camera for
+the QR code, notifications and "Add to Home screen" all work. The sensor page is at the same address plus
+`sensors.html`. A phone and a computer on the same crew link see each other's alerts.
+
+Phones usually run the written NASA rules (No AI) well; the browser copy starts with No AI and you can pick a
+model in Settings if the phone supports WebGPU. The AI weights download to each device on first use.
+
 ## Run a packaged download
 
-The download page ships one ZIP per assistant choice. Unzip it and start the launcher:
+The download page offers one ZIP per assistant and per operating system. Each ZIP contains exactly one start
+file, so there is nothing to choose:
 
 - Windows: double-click `Start Ex-Monitor.cmd`
 - macOS: double-click `Start Ex-Monitor.command`
@@ -99,14 +110,15 @@ receives. Sensor codes are names, not passwords; keep the demo on a network you 
 
 ```bash
 npm run build
+npm run build:hosted   # the /app/ copy that phones open
 npm run package:bundles
 ```
 
-`scripts/package-bundles.mjs` writes four ZIPs to `bundles/`, copies them into `site/downloads/` for the
-download page, and writes a `downloads.json` manifest. Options:
+`scripts/package-bundles.mjs` writes one ZIP per assistant and system (twelve in total) to `bundles/`, copies
+them into `site/downloads/` for the download page, and writes a `downloads.json` manifest. Options:
 
 ```bash
-node scripts/package-bundles.mjs --models phi3,none --out bundles --manifest site/downloads.json
+node scripts/package-bundles.mjs --models phi3,none --platforms windows --out bundles
 ```
 
 Use `--no-site` to skip the copies into `site/downloads/`.
@@ -114,22 +126,31 @@ Use `--no-site` to skip the copies into `site/downloads/`.
 ## Download page and hosting
 
 `site/` is a static landing page. It checks WebGPU, memory and processor cores in the browser, recommends a
-copy, and links to `/downloads/<file>.zip`.
+copy, detects the visitor's system and links to `/downloads/<file>.zip`. The same page links to the hosted
+console at `/app/`.
 
-The same Cloudflare Worker serves the landing page and the ZIPs, so there is no separate storage bucket and
-no card is needed. `worker/index.js` adds the download filename and handles resumed byte ranges.
-Configuration lives in `wrangler.jsonc`; every ZIP is well under the 25 MiB per-file limit for static assets.
+The hosted console is a second build of the app with `base` set to `/app/`; `scripts/build-hosted.mjs` builds
+it and copies it into `site/app/`. The ZIP build stays at the folder root because the launcher serves it
+there.
+
+The same Cloudflare Worker serves the landing page, the ZIPs and `/app/`, so there is no separate storage
+bucket and no card is needed. `worker/index.js` adds the download filename and handles resumed byte ranges.
+`worker/relayRoom.js` is a Durable Object that carries the crew link for the hosted copy. `/health` reports
+whether the relay is up and how many devices are connected. Every ZIP is well under the 25 MiB per-file
+limit for static assets.
 
 Publishing is handled by `.github/workflows/release.yml` on every push to `main`:
 
-1. Install, build and package the four ZIPs. Packaging copies them into `site/downloads/`.
-2. Deploy the Worker and the landing page.
+1. Install, build the app and build the hosted copy.
+2. Package the twelve ZIPs into `site/downloads/`.
+3. Deploy the Worker, the landing page and `/app/`.
 
 To publish from this machine:
 
 ```bash
 npx wrangler login
 npm run build
+npm run build:hosted
 npm run package:bundles
 npm run site:deploy
 ```
@@ -143,11 +164,13 @@ secrets the workflow still builds the ZIPs and keeps them as a workflow artifact
 | --- | --- |
 | `npm run dev` | Vite dev server with the relay proxy. |
 | `npm run build` | Type-check and build the console and the sensor page. |
+| `npm run build:hosted` | Build the `/app/` copy for the hosted page and copy it into `site/app/`. |
 | `npm start` | Serve the build and the relay from one address. |
 | `npm run relay` | Relay only, for development. |
-| `npm run package:bundles` | Create the four downloadable ZIPs and the manifest. |
+| `npm run package:bundles` | Create the twelve downloadable ZIPs and the manifest. |
+| `npm run site:build` | Build everything the download page needs in one command. |
 | `npm run site:dev` | Run the landing page and Worker locally with Wrangler. |
-| `npm run site:deploy` | Deploy the download page and its ZIPs. |
+| `npm run site:deploy` | Deploy the download page, `/app/` and the ZIPs. |
 
 ## Project layout
 
@@ -166,9 +189,9 @@ src/
   sensors/        The separate sensor page and its signal generator
   services/       Rules, WebLLM, relay client, notifications, profile, model catalog
 server.js         Zero-dependency launcher, static server and relay
-scripts/          Build helper and bundle packaging
-site/             Download landing page
-worker/           Cloudflare Worker that serves the landing page and ZIPs
+scripts/          Build helpers and bundle packaging
+site/             Download landing page, hosted /app/ copy and ZIPs
+worker/           Cloudflare Worker: landing page, ZIPs and the crew link room
 ```
 
 ## Limits

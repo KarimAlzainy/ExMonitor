@@ -44,7 +44,7 @@
             <a class="button button-primary" href="#downloads">Choose your download</a>
             <a class="button button-quiet" href="#inside">See what's inside</a>
           </div>
-          <p class="hero-note">Windows, macOS and Linux · Node.js 18 or newer · No account</p>
+          <p class="hero-note">Windows, macOS, Linux and phone browsers · Node.js 18 or newer for the offline copy</p>
         </div>
 
         <div class="console" aria-hidden="true">
@@ -87,7 +87,7 @@
       </section>
 
       <section class="fact-strip" aria-label="Key facts">
-        <p><span>01</span> Runs from a folder on this computer</p>
+        <p><span>01</span> Opens in a browser or from a folder</p>
         <p><span>02</span> Model files cached after the first use</p>
         <p><span>03</span> Readings stay on the crew network</p>
       </section>
@@ -130,10 +130,10 @@
 
       <section id="downloads" class="section downloads">
         <div class="section-head">
-          <h2>Download the copy that fits this computer.</h2>
+          <h2>Download the copy that fits this device.</h2>
           <p>
-            The check below happens in this browser and is never sent anywhere. Every choice contains the same
-            app; only the assistant that comes pre-selected changes.
+            The check below happens in this browser and is never sent anywhere. Every download contains the same
+            app; only the assistant that comes pre-selected changes. On a phone, open the browser copy instead.
           </p>
         </div>
 
@@ -154,18 +154,33 @@
 
           <article class="step step-download">
             <span class="step-number">03</span>
-            <h3>Your download</h3>
-            <a
-              id="download-button"
-              class="button button-primary button-block"
-              href="/downloads/ex-monitor-no-ai.zip"
-              download="ex-monitor-no-ai.zip"
-              >Download ZIP</a
-            >
-            <p id="download-meta" class="download-meta">A folder with the console, the sensor page and the launcher.</p>
+            <h3>Your copy</h3>
+            <div class="download-actions">
+              <a
+                id="download-button"
+                class="button button-primary button-block"
+                href="/downloads/ex-monitor-no-ai-windows.zip"
+                download="ex-monitor-no-ai-windows.zip"
+                >Download for Windows</a
+              >
+              <a id="open-button" class="button button-quiet button-block" href="/app/">Open in this browser</a>
+            </div>
+            <p id="download-meta" class="download-meta">A folder with the console, the sensor page and one start file.</p>
+            <p id="device-note" class="device-note" hidden>
+              On a phone, use “Open in this browser”. The download is for a computer.
+            </p>
+            <p id="os-line" class="os-line">
+              Download for
+              <select id="os-select" aria-label="Operating system">
+                <option value="windows">Windows</option>
+                <option value="macos">macOS</option>
+                <option value="linux">Linux</option>
+              </select>
+            </p>
             <p class="fineprint">
-              Unzip it, then run <code>Start Ex-Monitor</code>. Node.js 18 or newer is required. The first AI
-              use downloads the model once; after that the console works without the internet.
+              The offline copy needs Node.js 18 or newer. The first AI use downloads the model once; after that
+              the console works without the internet. The browser copy needs nothing installed and can be added
+              to the home screen.
             </p>
             <p id="download-error" class="download-error" hidden></p>
           </article>
@@ -179,21 +194,31 @@
 
       <section id="how" class="section how">
         <div class="section-head">
-          <h2>From ZIP to console in a minute.</h2>
+          <h2>Open it in a minute.</h2>
+          <p>Phones need no install. The computer copy is one file to start and then works offline.</p>
         </div>
         <ol class="how-list">
           <li>
             <div>
-              <h3>Unzip the folder</h3>
+              <h3>On a phone</h3>
+              <p>
+                Open <code>exmonitor.extem.net/app</code> and add it to the home screen. The sensor page is part
+                of the same address.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>On a computer: unzip the folder</h3>
               <p>Put it somewhere you can find again. Nothing installs into the system.</p>
             </div>
           </li>
           <li>
             <div>
-              <h3>Start the launcher</h3>
+              <h3>Start the single launcher</h3>
               <p>
-                Windows: double-click <code>Start Ex-Monitor.cmd</code>. macOS: double-click
-                <code>Start Ex-Monitor.command</code>. Linux: run <code>./start-ex-monitor.sh</code>.
+                The ZIP you download contains one start file for your system. Double-click it, or run it in a
+                terminal on Linux.
               </p>
             </div>
           </li>
