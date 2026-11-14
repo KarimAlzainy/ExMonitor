@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ZipArchive } from 'archiver';
 
@@ -26,7 +27,21 @@ function argValue(name, fallback) {
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-const version = argValue('--version', process.env.GITHUB_SHA?.slice(0, 7) || packageJson.version);
+
+function commitVersion() {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8'
+    }).trim();
+  } catch {
+    return packageJson.version;
+  }
+}
+
+// The workflow builds from a commit too, so both use the same label and the
+// page never claims a different build than the ZIPs on the release.
+const version = argValue('--version', process.env.GITHUB_SHA?.slice(0, 7) || commitVersion());
 const outDir = path.resolve(root, argValue('--out', 'bundles'));
 const distDir = path.join(root, 'dist');
 const manifestPath = path.resolve(root, argValue('--manifest', path.join('site', 'downloads.json')));
