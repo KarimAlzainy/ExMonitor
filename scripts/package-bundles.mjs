@@ -14,6 +14,7 @@ import { ZipArchive } from 'archiver';
  *   node scripts/package-bundles.mjs --out bundles --manifest site/downloads.json
  *   node scripts/package-bundles.mjs --models phi3,none
  *   node scripts/package-bundles.mjs --platforms windows
+ *   node scripts/package-bundles.mjs --site-copy
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -31,7 +32,9 @@ const outDir = path.resolve(root, argValue('--out', 'bundles'));
 const distDir = path.join(root, 'dist');
 const manifestPath = path.resolve(root, argValue('--manifest', path.join('site', 'downloads.json')));
 const siteOut = path.resolve(root, argValue('--site-out', path.join('site', 'downloads')));
-const copyToSite = !process.argv.includes('--no-site');
+// The published site points at the GitHub release, so the ZIPs stay out of the
+// Worker upload by default. Pass --site-copy to keep a local copy in site/.
+const copyToSite = process.argv.includes('--site-copy');
 const selection = argValue('--models', 'phi3,llama3,gemma2,none')
   .split(',')
   .map((value) => value.trim())

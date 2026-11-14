@@ -114,14 +114,16 @@ npm run build:hosted   # the /app/ copy that phones open
 npm run package:bundles
 ```
 
-`scripts/package-bundles.mjs` writes one ZIP per assistant and system (twelve in total) to `bundles/`, copies
-them into `site/downloads/` for the download page, and writes a `downloads.json` manifest. Options:
+`scripts/package-bundles.mjs` writes one ZIP per assistant and system (twelve in total) to `bundles/` and
+writes a `downloads.json` manifest with the size and checksum of each file. The ZIPs are not copied into the
+site by default, because they are published on a GitHub release instead of being uploaded to Cloudflare with
+every deploy. Options:
 
 ```bash
 node scripts/package-bundles.mjs --models phi3,none --platforms windows --out bundles
 ```
 
-Use `--no-site` to skip the copies into `site/downloads/`.
+Add `--site-copy` if you also want a local set inside `site/downloads/`.
 
 ## Download page and hosting
 
@@ -133,19 +135,20 @@ The hosted console is a second build of the app with `base` set to `/app/`; `scr
 it and copies it into `site/app/`. The ZIP build stays at the folder root because the launcher serves it
 there.
 
-The same Cloudflare Worker serves the landing page, the ZIPs and `/app/`, so there is no separate storage
-bucket and no card is needed. `worker/index.js` adds the download filename and handles resumed byte ranges.
-`worker/relayRoom.js` is a Durable Object that carries the crew link for the hosted copy. `/health` reports
-whether the relay is up and how many devices are connected. Every ZIP is well under the 25 MiB per-file
-limit for static assets.
+The Cloudflare Worker serves the landing page and the `/app/` console, so there is no storage bucket to set up
+and no card is needed. `worker/index.js` sends `/downloads/<file>.zip` to the matching file on the repository's
+`downloads` release, which keeps every deploy small and still allows a paused download to resume. The files
+themselves are up to 4.3 MB each. `worker/relayRoom.js` is a Durable Object that carries the crew link for the
+hosted copy. `/health` reports whether the relay is up and how many devices are connected.
 
 Publishing is handled by `.github/workflows/release.yml` on every push to `main`:
 
 1. Install, build the app and build the hosted copy.
-2. Package the twelve ZIPs into `site/downloads/`.
-3. Deploy the Worker, the landing page and `/app/`.
+2. Package the twelve ZIPs.
+3. Publish them on the `downloads` release, replacing the previous files.
+4. Deploy the Worker, the landing page and `/app/`.
 
-To publish from this machine:
+To publish the page from this machine:
 
 ```bash
 npx wrangler login
@@ -155,8 +158,8 @@ npm run package:bundles
 npm run site:deploy
 ```
 
-For GitHub Actions, add repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Without those
-secrets the workflow still builds the ZIPs and keeps them as a workflow artifact.
+The ZIPs themselves are published by the workflow. Without the Cloudflare secrets the workflow still publishes
+the ZIPs and skips the page deploy, so a push always leaves working downloads behind.
 
 ## Scripts
 
@@ -170,7 +173,7 @@ secrets the workflow still builds the ZIPs and keeps them as a workflow artifact
 | `npm run package:bundles` | Create the twelve downloadable ZIPs and the manifest. |
 | `npm run site:build` | Build everything the download page needs in one command. |
 | `npm run site:dev` | Run the landing page and Worker locally with Wrangler. |
-| `npm run site:deploy` | Deploy the download page, `/app/` and the ZIPs. |
+| `npm run site:deploy` | Deploy the download page and `/app/`; the ZIPs live on GitHub. |
 
 ## Project layout
 
@@ -190,7 +193,7 @@ src/
   services/       Rules, WebLLM, relay client, notifications, profile, model catalog
 server.js         Zero-dependency launcher, static server and relay
 scripts/          Build helpers and bundle packaging
-site/             Download landing page, hosted /app/ copy and ZIPs
+site/             Download landing page, hosted /app/ copy and the download list
 worker/           Cloudflare Worker: landing page, ZIPs and the crew link room
 ```
 

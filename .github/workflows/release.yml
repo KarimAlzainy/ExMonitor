@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -37,6 +37,15 @@ jobs:
       - name: Package one ZIP per assistant and system
         run: node scripts/package-bundles.mjs --out bundles --manifest site/downloads.json
 
+      - name: Publish the ZIPs on the downloads release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view downloads >/dev/null 2>&1 ||
+            gh release create downloads --title "Ex-Monitor downloads" \
+              --notes "The newest ZIPs, one per assistant and system. Each contains exactly one start file."
+          gh release upload downloads bundles/*.zip --clobber
+
       - name: Keep the ZIPs as a workflow artifact
         uses: actions/upload-artifact@v4
         with:
@@ -52,7 +61,7 @@ jobs:
         run: |
           if [ -z "$API_TOKEN" ] || [ -z "$ACCOUNT_ID" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Cloudflare secrets are not set. The ZIPs are available in this workflow run only."
+            echo "Cloudflare secrets are not set. The download page was not deployed; the ZIPs are on the downloads release."
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
