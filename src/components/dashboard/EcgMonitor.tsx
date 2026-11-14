@@ -1,12 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { Activity } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
-import { Activity, ShieldCheck, AlertTriangle, AlertOctagon } from 'lucide-react';
 
 export const EcgMonitor: React.FC = () => {
   const { vitals, ruleResult } = useTelemetry();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Maintain sweep state across frames
   const sweepRef = useRef<{
     x: number;
     points: number[];
@@ -26,71 +25,57 @@ export const EcgMonitor: React.FC = () => {
     let animationFrameId: number;
     const width = canvas.width;
     const height = canvas.height;
-    const baselineY = height * 0.55;
+    const baselineY = height * 0.6;
 
-    // Determine wave color based on rule severity
-    let waveColor = '#10b981'; // emerald
-    let glowColor = 'rgba(16, 185, 129, 0.4)';
+    let waveColor = '#59c98d';
+    let glowColor = 'rgba(89, 201, 141, 0.35)';
     if (ruleResult.statusColor === 'yellow') {
-      waveColor = '#f59e0b'; // amber
-      glowColor = 'rgba(245, 158, 11, 0.4)';
+      waveColor = '#d7a45a';
+      glowColor = 'rgba(215, 164, 90, 0.32)';
     } else if (ruleResult.statusColor === 'red') {
-      waveColor = '#ef4444'; // crimson
-      glowColor = 'rgba(239, 68, 68, 0.5)';
+      waveColor = '#e56767';
+      glowColor = 'rgba(229, 103, 103, 0.38)';
     }
 
     const render = () => {
-      // Draw grid if empty
       if (sweepRef.current.points.length === 0) {
         sweepRef.current.points = new Array(width).fill(baselineY);
       }
 
-      // Calculate beat period in pixels based on BPM
-      // At 60 BPM, 1 beat per sec. At 60 fps, 60 frames per beat.
       const bpm = Math.max(40, Math.min(190, vitals.heartRate));
       const beatIntervalFrames = Math.max(18, Math.round((60 / bpm) * 60));
-      
-      sweepRef.current.phase = (sweepRef.current.phase + 1) % beatIntervalFrames;
-      const normalizedPhase = sweepRef.current.phase / beatIntervalFrames; // 0 to 1
 
-      // Generate ECG Cardiac Waveform (P, Q, R, S, T complex)
+      sweepRef.current.phase = (sweepRef.current.phase + 1) % beatIntervalFrames;
+      const normalizedPhase = sweepRef.current.phase / beatIntervalFrames;
+
       let sampleY = baselineY;
 
-      if (normalizedPhase >= 0.12 && normalizedPhase <= 0.20) {
-        // P-wave (Atrial Depolarization)
+      if (normalizedPhase >= 0.12 && normalizedPhase <= 0.2) {
         const pNorm = (normalizedPhase - 0.12) / 0.08;
-        sampleY -= Math.sin(pNorm * Math.PI) * 12;
+        sampleY -= Math.sin(pNorm * Math.PI) * 10;
       } else if (normalizedPhase >= 0.26 && normalizedPhase < 0.28) {
-        // Q-wave (Negative defection before spike)
-        sampleY += 8;
+        sampleY += 7;
       } else if (normalizedPhase >= 0.28 && normalizedPhase <= 0.32) {
-        // R-peak (Sharp high-voltage Ventricular Depolarization spike)
         const rNorm = (normalizedPhase - 0.28) / 0.04;
-        sampleY -= Math.sin(rNorm * Math.PI) * 62;
+        sampleY -= Math.sin(rNorm * Math.PI) * 64;
       } else if (normalizedPhase > 0.32 && normalizedPhase <= 0.35) {
-        // S-wave (Deep negative deflection)
-        sampleY += 16;
+        sampleY += 14;
       } else if (normalizedPhase >= 0.48 && normalizedPhase <= 0.64) {
-        // T-wave (Ventricular Repolarization)
         const tNorm = (normalizedPhase - 0.48) / 0.16;
-        sampleY -= Math.sin(tNorm * Math.PI) * 18;
+        sampleY -= Math.sin(tNorm * Math.PI) * 15;
       } else {
-        // Baseline noise / subtle muscle artifact
-        sampleY += (Math.random() - 0.5) * 1.5;
+        sampleY += (Math.random() - 0.5) * 1.2;
       }
 
-      // Update sweep point
       const curX = sweepRef.current.x;
       sweepRef.current.points[curX] = sampleY;
       sweepRef.current.x = (curX + 2) % width;
 
-      // Clear Canvas & Draw Phosphor Grid
-      ctx.fillStyle = '#07090e';
+      ctx.fillStyle = '#06070a';
       ctx.fillRect(0, 0, width, height);
 
-      // Medical ECG Grid lines
-      ctx.lineWidth = 0.5;
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.07)';
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
       for (let gx = 0; gx < width; gx += 20) {
         ctx.beginPath();
         ctx.moveTo(gx, 0);
@@ -104,32 +89,42 @@ export const EcgMonitor: React.FC = () => {
         ctx.stroke();
       }
 
-      // Major grid lines
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.14)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
       for (let gx = 0; gx < width; gx += 100) {
         ctx.beginPath();
         ctx.moveTo(gx, 0);
         ctx.lineTo(gx, height);
         ctx.stroke();
       }
-      for (let gy = 0; gy < height; gy += 60) {
+      for (let gy = 0; gy < height; gy += 80) {
         ctx.beginPath();
         ctx.moveTo(0, gy);
         ctx.lineTo(width, gy);
         ctx.stroke();
       }
 
-      // Draw ECG trace with phosphor glow
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(0, baselineY);
+      ctx.lineTo(width, baselineY);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.beginPath();
+      ctx.moveTo(curX, 0);
+      ctx.lineTo(curX, height);
+      ctx.stroke();
+
       ctx.save();
       ctx.shadowColor = glowColor;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 6;
       ctx.strokeStyle = waveColor;
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = 1.8;
       ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
 
       ctx.beginPath();
       for (let i = 0; i < width; i++) {
-        // Create an erase gap around current sweep head
         const dist = (i - sweepRef.current.x + width) % width;
         if (dist > 5 && dist < width - 15) {
           if (i === 0 || dist === 6) {
@@ -142,12 +137,9 @@ export const EcgMonitor: React.FC = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Sweep head luminous dot
       ctx.beginPath();
-      ctx.arc(curX, sampleY, 4, 0, Math.PI * 2);
+      ctx.arc(curX, sampleY, 2.5, 0, Math.PI * 2);
       ctx.fillStyle = waveColor;
-      ctx.shadowColor = waveColor;
-      ctx.shadowBlur = 12;
       ctx.fill();
 
       animationFrameId = requestAnimationFrame(render);
@@ -160,90 +152,76 @@ export const EcgMonitor: React.FC = () => {
     };
   }, [vitals.heartRate, ruleResult.statusColor]);
 
+  const statusTone =
+    ruleResult.statusColor === 'red'
+      ? { dot: 'bg-critical', text: 'text-critical' }
+      : ruleResult.statusColor === 'yellow'
+        ? { dot: 'bg-caution', text: 'text-caution' }
+        : { dot: 'bg-positive', text: 'text-positive' };
+
+  const rhythm =
+    vitals.heartRate > 125 ? 'Sinus tachycardia' : vitals.heartRate < 45 ? 'Bradycardia' : 'Normal sinus rhythm';
+
   return (
-    <div className="relative rounded-2xl bg-space-900 border border-space-700/60 p-4 overflow-hidden shadow-2xl backdrop-blur-md">
-      {/* HUD Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-space-800">
-        <div className="flex items-center space-x-2.5">
-          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <Activity className="w-5 h-5 animate-pulse" />
+    <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
+            <h2 className="text-[15px] font-medium text-ink-100">Lead II ECG</h2>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold tracking-wider text-slate-200 uppercase font-mono">
-              Lead-II Continuous 3-Lead ECG Telemetry
-            </h3>
-            <p className="text-xs text-slate-400 font-mono">
-              ST-Segment Analysis • Cal: 25mm/s • 10mm/mV • SNR: 38dB
-            </p>
-          </div>
+          <p className="mt-1 text-[11px] text-ink-500">Continuous 3-lead telemetry · 25 mm/s · 10 mm/mV · SNR 38 dB</p>
         </div>
 
-        {/* Status indicator badge */}
-        <div className="flex items-center space-x-3">
-          <div className="text-right">
-            <div className="text-2xl font-bold font-mono tracking-tight text-slate-100 flex items-center justify-end">
-              <span>{vitals.heartRate}</span>
-              <span className="text-xs text-slate-400 font-sans ml-1.5 font-normal">BPM</span>
-            </div>
-            <div className="text-[11px] font-mono text-slate-400">
-              {vitals.heartRate > 125 ? 'SINUS TACHYCARDIA' : vitals.heartRate < 45 ? 'BRADYCARDIA' : 'NORMAL SINUS RHYTHM'}
-            </div>
+        <div className="text-right">
+          <div className="flex items-baseline justify-end gap-1.5">
+            <span className="text-[32px] font-medium leading-none tracking-tight tabular-nums text-ink-100">
+              {vitals.heartRate}
+            </span>
+            <span className="text-xs text-ink-400">BPM</span>
           </div>
-
-          <div
-            className={`px-3 py-1.5 rounded-lg flex items-center space-x-1.5 text-xs font-mono font-medium border ${
-              ruleResult.statusColor === 'green'
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                : ruleResult.statusColor === 'yellow'
-                ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                : 'bg-red-500/10 text-red-400 border-red-500/30 animate-pulse'
-            }`}
-          >
-            {ruleResult.statusColor === 'green' ? (
-              <ShieldCheck className="w-3.5 h-3.5" />
-            ) : ruleResult.statusColor === 'yellow' ? (
-              <AlertTriangle className="w-3.5 h-3.5" />
-            ) : (
-              <AlertOctagon className="w-3.5 h-3.5" />
-            )}
-            <span className="uppercase">{ruleResult.severity}</span>
+          <div className={`mt-1.5 flex items-center justify-end gap-1.5 text-[11px] ${statusTone.text}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${statusTone.dot}`} />
+            {rhythm}
           </div>
         </div>
       </div>
 
-      {/* Real-time Oscilloscope Canvas */}
-      <div className="relative mt-3 rounded-xl overflow-hidden border border-space-800 bg-space-950">
+      <div className="mt-5 overflow-hidden rounded-xl border border-white/[0.06] bg-[#06070a]">
         <canvas
           ref={canvasRef}
-          width={800}
-          height={180}
-          className="w-full h-40 md:h-48 block"
+          width={1000}
+          height={240}
+          role="img"
+          aria-label="Live Lead II ECG waveform"
+          className="block h-52 w-full md:h-64"
         />
-        {/* CRT Scanline overlay effect */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-emerald-500/[0.02] to-transparent opacity-60" />
       </div>
 
-      {/* Sub-telemetry strip */}
-      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-mono">
-        <div className="bg-space-850/80 rounded-lg p-2 border border-space-800">
-          <span className="text-slate-400">PR INTERVAL:</span>
-          <span className="ml-1.5 text-slate-200 font-semibold">158 ms</span>
+      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-white/[0.06] pt-4 sm:grid-cols-4">
+        <div className="flex items-baseline justify-between gap-2 sm:block">
+          <span className="text-[11px] text-ink-500">PR interval</span>
+          <span className="text-[13px] font-medium tabular-nums text-ink-200 sm:mt-0.5 sm:block">158 ms</span>
         </div>
-        <div className="bg-space-850/80 rounded-lg p-2 border border-space-800">
-          <span className="text-slate-400">QRS WIDTH:</span>
-          <span className="ml-1.5 text-slate-200 font-semibold">88 ms</span>
+        <div className="flex items-baseline justify-between gap-2 sm:block">
+          <span className="text-[11px] text-ink-500">QRS width</span>
+          <span className="text-[13px] font-medium tabular-nums text-ink-200 sm:mt-0.5 sm:block">88 ms</span>
         </div>
-        <div className="bg-space-850/80 rounded-lg p-2 border border-space-800">
-          <span className="text-slate-400">QTc (BAZETT):</span>
-          <span className="ml-1.5 text-slate-200 font-semibold">412 ms</span>
+        <div className="flex items-baseline justify-between gap-2 sm:block">
+          <span className="text-[11px] text-ink-500">QTc (Bazett)</span>
+          <span className="text-[13px] font-medium tabular-nums text-ink-200 sm:mt-0.5 sm:block">412 ms</span>
         </div>
-        <div className="bg-space-850/80 rounded-lg p-2 border border-space-800">
-          <span className="text-slate-400">ST DEVIATION:</span>
-          <span className={`ml-1.5 font-semibold ${ruleResult.severity === 'critical' ? 'text-red-400' : 'text-emerald-400'}`}>
-            {ruleResult.severity === 'critical' ? '+1.8 mm (ELEVATED)' : '0.0 mm'}
+        <div className="flex items-baseline justify-between gap-2 sm:block">
+          <span className="text-[11px] text-ink-500">ST deviation</span>
+          <span
+            className={`text-[13px] font-medium tabular-nums sm:mt-0.5 sm:block ${
+              ruleResult.severity === 'critical' ? 'text-critical' : 'text-ink-200'
+            }`}
+          >
+            {ruleResult.severity === 'critical' ? '+1.8 mm' : '0.0 mm'}
           </span>
         </div>
       </div>
-    </div>
+    </section>
   );
 };

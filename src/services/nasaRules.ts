@@ -25,9 +25,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'critical',
       statusColor: 'red',
-      hazardTitle: 'CRITICAL HYPOXIA DETECTED',
+      hazardTitle: 'Critical hypoxia detected',
       hazardDescription: `Blood Oxygen saturated at ${spO2}%, below vital threshold (<88%). Severe risk of loss of consciousness within 60s.`,
-      recommendedAction: 'IMMEDIATELY ABORT EVA. Check Primary Oxygen Regulator, switch to Secondary O2 Loop, increase suit pressure by 0.5 psi, signal Crew Lead.',
+      recommendedAction: 'Abort EVA immediately. Check the primary oxygen regulator, switch to the secondary O2 loop, increase suit pressure by 0.5 psi, and signal the crew lead.',
       isTriggerEmergency: true,
       nasaRef: 'NASA EVA Med-Rule 4.1.2 (Anoxia)'
     };
@@ -38,9 +38,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'critical',
       statusColor: 'red',
-      hazardTitle: 'IONIZING RADIATION FLUX BREACH (MR092L)',
+      hazardTitle: 'Ionizing radiation flux breach (MR092L)',
       hazardDescription: `Ambient radiation dosimeter spiked to ${radiationDoseRate.toFixed(2)} mSv/hr (>1.0 mSv/hr contingency ceiling). Solar Particle Event (SPE) probable.`,
-      recommendedAction: 'EXECUTE IMMEDIATE RETREAT to shielded spacecraft storm shelter (Zvezda / Orion storm bay). Ingest radioprotective countermeasure kit.',
+      recommendedAction: 'Retreat immediately to the shielded spacecraft storm shelter (Zvezda / Orion storm bay). Ingest the radioprotective countermeasure kit.',
       isTriggerEmergency: true,
       nasaRef: 'NASA MR092L Radiation Emergency Standard'
     };
@@ -51,9 +51,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'critical',
       statusColor: 'red',
-      hazardTitle: 'ACUTE CARDIAC STRAIN / TACHYCARDIA',
+      hazardTitle: 'Acute cardiac strain / tachycardia',
       hazardDescription: `Heart rate spiked to ${heartRate} BPM with severe autonomic nervous system stress (GSR: ${gsrStress.toFixed(1)} uS).`,
-      recommendedAction: 'HALT ALL EXERTION. Lock tether. Enable active liquid cooling garment (LCG) maximum flow. Rest 180s and monitor rhythm.',
+      recommendedAction: 'Halt all exertion. Lock the tether. Enable active liquid cooling garment (LCG) maximum flow. Rest for 180 seconds and monitor rhythm.',
       isTriggerEmergency: true,
       nasaRef: 'NASA MEDB 5.2 Cardiovascular Limits'
     };
@@ -64,9 +64,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'critical',
       statusColor: 'red',
-      hazardTitle: 'ACUTE SEVERE BRADYCARDIA',
+      hazardTitle: 'Acute severe bradycardia',
       hazardDescription: `Heart rate collapsed to ${heartRate} BPM. Autonomic collapse or vagal syncope imminent.`,
-      recommendedAction: 'SIT / ANCHOR IMMEDIATELY. Elevate legs if in habitat, ingest electrolytes, prepare atropine injector if conscious level decreases.',
+      recommendedAction: 'Sit and anchor immediately. Elevate legs if in the habitat, ingest electrolytes, and prepare the atropine injector if consciousness decreases.',
       isTriggerEmergency: true,
       nasaRef: 'NASA MEDB 5.2 Cardiac Arrest Protocol'
     };
@@ -77,9 +77,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'critical',
       statusColor: 'red',
-      hazardTitle: 'CRITICAL HYPERTHERMIA (HEAT STROKE RISK)',
+      hazardTitle: 'Critical hyperthermia (heat stroke risk)',
       hazardDescription: `Core temperature at ${bodyTemp.toFixed(1)}°C. Metabolic heat accumulation exceeding sublimation cooling capacity.`,
-      recommendedAction: 'Switch suit sublimation sublimator to MAX. Minimize physical movement. Hydrate immediately with cold electrolyte reservoir.',
+      recommendedAction: 'Switch the suit sublimator to max. Minimize movement. Hydrate immediately with the cold electrolyte reservoir.',
       isTriggerEmergency: true,
       nasaRef: 'NASA EVA Thermal Regulation Contingency'
     };
@@ -91,9 +91,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'caution',
       statusColor: 'yellow',
-      hazardTitle: 'CAUTION: ELEVATED HYPOXIA MARGIN',
+      hazardTitle: 'Elevated hypoxia margin',
       hazardDescription: `Blood Oxygen at ${spO2}% (nominal: 95-100%). Elevated metabolic consumption detected.`,
-      recommendedAction: 'Reduce work rate. Take 10 deep controlled breaths. Verify suit O2 bleed valve rate.',
+      recommendedAction: 'Reduce work rate. Take 10 deep controlled breaths. Verify the suit O2 bleed valve rate.',
       isTriggerEmergency: false,
       nasaRef: 'NASA Flight Rule EVA-3.8'
     };
@@ -104,9 +104,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'caution',
       statusColor: 'yellow',
-      hazardTitle: 'HIGH PHYSICAL EXERTION / STRESS',
+      hazardTitle: 'High physical exertion / stress',
       hazardDescription: `Heart rate elevated at ${heartRate} BPM, accompanied by sympathetic activation (GSR ${gsrStress.toFixed(1)} uS).`,
-      recommendedAction: 'Pause heavy mechanical operations. Sip water from in-suit straw. Stabilize respiratory rhythm.',
+      recommendedAction: 'Pause heavy mechanical operations. Sip water from the in-suit straw. Stabilize respiratory rhythm.',
       isTriggerEmergency: false,
       nasaRef: 'NASA MEDB 5.2 Exercise Monitoring'
     };
@@ -117,9 +117,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'caution',
       statusColor: 'yellow',
-      hazardTitle: 'ELEVATED RADIATION FLUX (MR092L CAUTION)',
+      hazardTitle: 'Elevated radiation flux (MR092L caution)',
       hazardDescription: `Dose rate reached ${radiationDoseRate.toFixed(2)} mSv/hr. Approaching non-nominal orbital flux.`,
-      recommendedAction: 'Log current habitat sector. Limit exterior spacewalk duration to < 45 minutes.',
+      recommendedAction: 'Log the current habitat sector. Limit exterior spacewalk duration to under 45 minutes.',
       isTriggerEmergency: false,
       nasaRef: 'NASA MR092L Phase 2 Tracking'
     };
@@ -130,9 +130,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
     return {
       severity: 'caution',
       statusColor: 'yellow',
-      hazardTitle: 'THERMAL LOAD WARNING',
+      hazardTitle: 'Thermal load warning',
       hazardDescription: `Core temperature at ${bodyTemp.toFixed(1)}°C. Elevated metabolic heat index.`,
-      recommendedAction: 'Increase Liquid Cooling and Ventilation Garment (LCVG) coolant valve by +1 notch.',
+      recommendedAction: 'Increase the liquid cooling and ventilation garment (LCVG) coolant valve by one notch.',
       isTriggerEmergency: false,
       nasaRef: 'NASA EMU Suit Ops 2.4'
     };
@@ -142,9 +142,9 @@ export function evaluateBiometrics(vitals: VitalsData): RuleEvaluationResult {
   return {
     severity: 'nominal',
     statusColor: 'green',
-    hazardTitle: 'ALL BIOMETRICS NOMINAL',
+    hazardTitle: 'All biometrics nominal',
     hazardDescription: `Heart rate ${heartRate} BPM, SpO2 ${spO2}%, Core Temp ${bodyTemp.toFixed(1)}°C, Rad Safe (${radiationDoseRate.toFixed(2)} mSv/hr).`,
-    recommendedAction: 'Continue scheduled mission tasks. Maintain hydration and check suit umbilical connections every 30 min.',
+    recommendedAction: 'Continue scheduled mission tasks. Maintain hydration and check suit umbilical connections every 30 minutes.',
     isTriggerEmergency: false,
     nasaRef: 'NASA Baseline Human Performance Spec'
   };
@@ -171,7 +171,7 @@ export interface SymptomRuleCard {
 export const NASA_SYMPTOM_PROTOCOLS: SymptomRuleCard[] = [
   {
     id: 'chest_pain',
-    name: 'Chest Pain / Pressure',
+    name: 'Chest pain / pressure',
     icon: 'HeartPulse',
     description: 'Pain, tightness, or burning sensation across the sternum or radiating to left arm.',
     evaluate: (vitals) => {
@@ -194,7 +194,7 @@ export const NASA_SYMPTOM_PROTOCOLS: SymptomRuleCard[] = [
   },
   {
     id: 'dizziness_hypoxia',
-    name: 'Dizziness / Hypoxia',
+    name: 'Dizziness / hypoxia',
     icon: 'Wind',
     description: 'Lightheadedness, tunnel vision, confusion, or difficulty focusing.',
     evaluate: (vitals) => {
@@ -217,7 +217,7 @@ export const NASA_SYMPTOM_PROTOCOLS: SymptomRuleCard[] = [
   },
   {
     id: 'fatigue_heat',
-    name: 'Exhaustion / Overheating',
+    name: 'Exhaustion / overheating',
     icon: 'Flame',
     description: 'Excessive sweating, heavy lethargy, muscle weakness, or sensation of heat.',
     evaluate: (vitals) => {
@@ -240,7 +240,7 @@ export const NASA_SYMPTOM_PROTOCOLS: SymptomRuleCard[] = [
   },
   {
     id: 'radiation_alert',
-    name: 'Radiation Flare Exposure',
+    name: 'Radiation flare exposure',
     icon: 'Radiation',
     description: 'Dosimeter alarm or visible visual phosphenes (light flashes) in closed eyes.',
     evaluate: (vitals) => {
@@ -263,7 +263,7 @@ export const NASA_SYMPTOM_PROTOCOLS: SymptomRuleCard[] = [
   },
   {
     id: 'arrhythmia',
-    name: 'Arrhythmia / Palpitations',
+    name: 'Arrhythmia / palpitations',
     icon: 'Activity',
     description: 'Skipped beats, racing flutter in chest, or sudden irregular pulse.',
     evaluate: (vitals) => {

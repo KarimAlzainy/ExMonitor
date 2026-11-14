@@ -1,46 +1,48 @@
 import React from 'react';
-import { Activity, Cpu, FlaskConical, Stethoscope } from 'lucide-react';
+import { Activity, Cpu, FlaskConical, LucideIcon, Stethoscope } from 'lucide-react';
 
 export type AppTab = 'telemetry' | 'surgeon' | 'setup' | 'lab';
 
-const TABS: { id: AppTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'telemetry', label: 'Live Telemetry', icon: Activity },
-  { id: 'surgeon', label: 'AI Flight Surgeon', icon: Stethoscope },
-  { id: 'setup', label: 'Setup & Pairing', icon: Cpu },
-  { id: 'lab', label: 'Virtual Lab', icon: FlaskConical }
+const TABS: { id: AppTab; label: string; shortLabel: string; icon: LucideIcon }[] = [
+  { id: 'telemetry', label: 'Live telemetry', shortLabel: 'Telemetry', icon: Activity },
+  { id: 'surgeon', label: 'Flight surgeon', shortLabel: 'Surgeon', icon: Stethoscope },
+  { id: 'setup', label: 'Pairing', shortLabel: 'Pairing', icon: Cpu },
+  { id: 'lab', label: 'Virtual lab', shortLabel: 'Lab', icon: FlaskConical }
 ];
 
 interface TabNavigationProps {
   active: AppTab;
   onChange: (tab: AppTab) => void;
+  variant?: 'inline' | 'bar';
 }
 
-export const TabNavigation: React.FC<TabNavigationProps> = ({ active, onChange }) => {
+export const TabNavigation: React.FC<TabNavigationProps> = ({ active, onChange, variant = 'inline' }) => {
   return (
-    <nav className="border-b border-space-800 bg-space-950/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-3 py-2 sm:px-6">
-        {TABS.map((tab, index) => {
-          const Icon = tab.icon;
-          const selected = tab.id === active;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onChange(tab.id)}
-              aria-current={selected ? 'page' : undefined}
-              className={`flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 font-mono text-xs sm:text-sm ${
-                selected
-                  ? 'border-nasa-cyan/40 bg-nasa-cyan/10 text-nasa-cyan'
-                  : 'border-transparent text-slate-400 hover:border-space-700 hover:bg-space-900 hover:text-slate-100'
-              }`}
-            >
-              <span className="text-[10px] text-slate-500">{index + 1}</span>
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+    <nav
+      aria-label="Sections"
+      className={variant === 'bar' ? 'flex items-center gap-1 overflow-x-auto' : 'flex items-center gap-1'}
+    >
+      {TABS.map((tab) => {
+        const Icon = tab.icon;
+        const selected = tab.id === active;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            aria-current={selected ? 'page' : undefined}
+            className={`relative flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-medium transition-colors sm:gap-2 sm:px-3 sm:text-[13px] ${
+              selected
+                ? 'border-white/[0.08] bg-space-850 text-ink-100'
+                : 'border-transparent text-ink-400 hover:bg-space-900 hover:text-ink-200'
+            }`}
+          >
+            <Icon className="h-4 w-4" strokeWidth={1.5} />
+            <span className="sm:hidden">{tab.shortLabel}</span>
+            <span className="hidden sm:inline">{tab.label}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 };

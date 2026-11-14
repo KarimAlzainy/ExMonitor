@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { AlertOctagon, Activity, Flame, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
+import { AlertOctagon, Activity, Flame, LucideIcon, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
 import { SimulationPreset } from '../../types/telemetry';
 import { useTelemetry } from '../../context/TelemetryContext';
 
@@ -12,11 +12,11 @@ const PRESETS: {
   id: SimulationPreset;
   label: string;
   detail: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
 }[] = [
-  { id: 'normal', label: 'Normal Mode', detail: '72 BPM · 98% SpO2', icon: Activity },
-  { id: 'workout', label: 'Workout / Stress Mode', detail: '135 BPM · 94% SpO2', icon: Flame },
-  { id: 'emergency', label: 'Emergency Danger Mode', detail: '84% SpO2 · 2.45 mSv/hr', icon: AlertOctagon }
+  { id: 'normal', label: 'Normal mode', detail: '72 BPM · 98% SpO2', icon: Activity },
+  { id: 'workout', label: 'Workout / stress mode', detail: '135 BPM · 94% SpO2', icon: Flame },
+  { id: 'emergency', label: 'Emergency danger mode', detail: '84% SpO2 · 2.45 mSv/hr', icon: AlertOctagon }
 ];
 
 export const SimulatorDrawer: React.FC<SimulatorDrawerProps> = ({ open, onClose }) => {
@@ -41,18 +41,25 @@ export const SimulatorDrawer: React.FC<SimulatorDrawerProps> = ({ open, onClose 
 
   if (!open) return null;
 
+  const statusTone =
+    ruleResult.statusColor === 'red'
+      ? { dot: 'bg-critical', border: 'border-critical/30', text: 'text-critical' }
+      : ruleResult.statusColor === 'yellow'
+        ? { dot: 'bg-caution', border: 'border-caution/30', text: 'text-caution' }
+        : { dot: 'bg-positive', border: 'border-white/[0.08]', text: 'text-ink-200' };
+
   return (
     <aside
       role="dialog"
-      aria-label="Demo control panel"
-      className="fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-sm flex-col border-l border-space-700 bg-space-950/95 shadow-2xl backdrop-blur-md"
+      aria-label="Demo controls"
+      className="fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-sm flex-col border-l border-white/[0.08] bg-space-950"
     >
-      <div className="flex items-center justify-between border-b border-space-800 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-nasa-cyan" />
+      <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] px-4 py-4">
+        <div className="flex items-start gap-2.5">
+          <SlidersHorizontal className="mt-0.5 h-4 w-4 text-ink-500" strokeWidth={1.5} />
           <div>
-            <h2 className="font-mono text-sm text-slate-100">Demo control panel</h2>
-            <p className="font-mono text-[10px] uppercase text-slate-400">
+            <h2 className="text-[15px] font-medium text-ink-100">Demo controls</h2>
+            <p className="mt-0.5 text-[11px] text-ink-500">
               {isManualHold ? 'Manual hold' : `Preset · ${simulationPreset}`}
             </p>
           </div>
@@ -60,123 +67,127 @@ export const SimulatorDrawer: React.FC<SimulatorDrawerProps> = ({ open, onClose 
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1 text-slate-300 hover:bg-space-800"
-          aria-label="Collapse demo controls"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-space-850 hover:text-ink-100"
+          aria-label="Close demo controls"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" strokeWidth={1.5} />
         </button>
       </div>
 
-      <div className="scrollbar-thin flex-1 space-y-4 overflow-y-auto p-4">
-        <div
-          className={`rounded-xl border px-3 py-2 font-mono text-[11px] ${
-            ruleResult.statusColor === 'red'
-              ? 'border-red-500/40 bg-red-500/10 text-red-200'
-              : ruleResult.statusColor === 'yellow'
-                ? 'border-amber-500/40 bg-amber-500/10 text-amber-100'
-                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100'
-          }`}
-        >
-          {ruleResult.hazardTitle}
+      <div className="scrollbar-thin flex-1 space-y-5 overflow-y-auto p-4">
+        <div className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-[12px] ${statusTone.border} ${statusTone.text}`}>
+          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusTone.dot}`} />
+          <span>{ruleResult.hazardTitle}</span>
         </div>
 
-        <div className="space-y-2">
-          {PRESETS.map((preset) => {
-            const Icon = preset.icon;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => setSimulationPreset(preset.id)}
-                className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left ${
-                  simulationPreset === preset.id && !isManualHold
-                    ? 'border-nasa-cyan/50 bg-nasa-cyan/10'
-                    : 'border-space-700 bg-space-900'
-                }`}
-              >
-                <Icon
-                  className={`h-4 w-4 shrink-0 ${
-                    preset.id === 'emergency' ? 'text-red-400' : preset.id === 'workout' ? 'text-amber-400' : 'text-emerald-400'
+        <div>
+          <p className="mb-2 text-[11px] text-ink-500">Simulation preset</p>
+          <div className="space-y-2">
+            {PRESETS.map((preset) => {
+              const Icon = preset.icon;
+              const selected = simulationPreset === preset.id && !isManualHold;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => setSimulationPreset(preset.id)}
+                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                    selected ? 'border-signal/50 bg-signal/[0.06]' : 'border-white/[0.08] bg-space-900 hover:border-white/15'
                   }`}
-                />
-                <span>
-                  <span className="block font-mono text-sm text-slate-100">{preset.label}</span>
-                  <span className="block font-mono text-[11px] text-slate-400">{preset.detail}</span>
-                </span>
-              </button>
-            );
-          })}
+                >
+                  <Icon
+                    className={`h-4 w-4 shrink-0 ${
+                      preset.id === 'emergency'
+                        ? 'text-critical'
+                        : preset.id === 'workout'
+                          ? 'text-caution'
+                          : 'text-ink-400'
+                    }`}
+                    strokeWidth={1.5}
+                  />
+                  <span>
+                    <span className="block text-[13px] text-ink-100">{preset.label}</span>
+                    <span className="block text-[11px] text-ink-500">{preset.detail}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {isManualHold && (
           <button
             type="button"
             onClick={() => setSimulationPreset('normal')}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-space-700 bg-space-900 py-2.5 font-mono text-xs text-slate-200 hover:border-nasa-cyan/40"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-space-900 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15 hover:bg-space-850"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
+            <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
             Resume live simulation
           </button>
         )}
 
-        <Slider
-          label="Heart rate"
-          min={40}
-          max={180}
-          step={1}
-          value={vitals.heartRate}
-          unit="BPM"
-          onChange={(value) => setManualVitals({ heartRate: value })}
-        />
-        <Slider
-          label="SpO2"
-          min={70}
-          max={100}
-          step={1}
-          value={vitals.spO2}
-          unit="%"
-          onChange={(value) => setManualVitals({ spO2: value })}
-        />
-        <Slider
-          label="Temperature"
-          min={35}
-          max={40}
-          step={0.1}
-          value={vitals.bodyTemp}
-          unit="°C"
-          onChange={(value) => setManualVitals({ bodyTemp: value })}
-        />
-        <Slider
-          label="GSR"
-          min={1}
-          max={28}
-          step={0.1}
-          value={vitals.gsrStress}
-          unit="µS"
-          onChange={(value) => setManualVitals({ gsrStress: value })}
-        />
-        <Slider
-          label="Radiation"
-          min={0.01}
-          max={5}
-          step={0.01}
-          value={vitals.radiationDoseRate}
-          unit="mSv/hr"
-          onChange={(value) => setManualVitals({ radiationDoseRate: value })}
-        />
+        <div className="space-y-4 border-t border-white/[0.06] pt-4">
+          <Slider
+            label="Heart rate"
+            min={40}
+            max={180}
+            step={1}
+            value={vitals.heartRate}
+            unit="BPM"
+            onChange={(value) => setManualVitals({ heartRate: value })}
+          />
+          <Slider
+            label="SpO2"
+            min={70}
+            max={100}
+            step={1}
+            value={vitals.spO2}
+            unit="%"
+            onChange={(value) => setManualVitals({ spO2: value })}
+          />
+          <Slider
+            label="Temperature"
+            min={35}
+            max={40}
+            step={0.1}
+            value={vitals.bodyTemp}
+            unit="°C"
+            onChange={(value) => setManualVitals({ bodyTemp: value })}
+          />
+          <Slider
+            label="GSR"
+            min={1}
+            max={28}
+            step={0.1}
+            value={vitals.gsrStress}
+            unit="µS"
+            onChange={(value) => setManualVitals({ gsrStress: value })}
+          />
+          <Slider
+            label="Radiation"
+            min={0.01}
+            max={5}
+            step={0.01}
+            value={vitals.radiationDoseRate}
+            unit="mSv/hr"
+            onChange={(value) => setManualVitals({ radiationDoseRate: value })}
+          />
+        </div>
 
-        <button
-          type="button"
-          onClick={() => triggerEmergencySOS()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/50 bg-red-600/20 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-red-200 hover:bg-red-600/30"
-        >
-          <AlertOctagon className="h-4 w-4" />
-          Broadcast a test SOS
-        </button>
-        <p className="font-mono text-[10px] leading-relaxed text-slate-500">
-          Sliders switch the panel into manual hold. Presets restore automatic simulation. Emergency values trip the
-          NASA safety rules, the Klaxon, and the full-screen takeover.
-        </p>
+        <div className="border-t border-white/[0.06] pt-4">
+          <button
+            type="button"
+            onClick={() => triggerEmergencySOS()}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-critical/30 bg-critical/[0.06] text-[12px] font-medium text-critical transition-colors hover:bg-critical/10"
+          >
+            <AlertOctagon className="h-4 w-4" strokeWidth={1.5} />
+            Broadcast a test SOS
+          </button>
+          <p className="mt-2 text-[11px] leading-5 text-ink-500">
+            Sliders switch the panel into manual hold. Presets restore automatic simulation. Emergency values trip the
+            NASA safety rules, the Klaxon, and the full-screen takeover.
+          </p>
+        </div>
       </div>
     </aside>
   );
@@ -200,14 +211,15 @@ function Slider({
   onChange: (value: number) => void;
 }) {
   const shown = step < 1 ? value.toFixed(step < 0.1 ? 2 : 1) : Math.round(value).toString();
+  const percent = Math.round(((value - min) / (max - min)) * 100);
   return (
-    <label className="block rounded-xl border border-space-800 bg-space-900 px-3 py-3">
-      <div className="mb-2 flex items-center justify-between font-mono text-xs text-slate-300">
+    <label className="block">
+      <span className="flex items-baseline justify-between gap-2 text-[12px] text-ink-300">
         <span>{label}</span>
-        <span className="text-slate-100">
+        <span className="font-mono tabular-nums text-ink-100">
           {shown} {unit}
         </span>
-      </div>
+      </span>
       <input
         type="range"
         min={min}
@@ -215,8 +227,18 @@ function Slider({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full"
+        className="mt-2 w-full"
+        aria-label={label}
+        style={{
+          background: `linear-gradient(to right, #7aa7c7 ${percent}%, #262b33 ${percent}%) center / 100% 4px no-repeat`
+        }}
       />
+      <span className="mt-0.5 flex justify-between font-mono text-[10px] text-ink-500">
+        <span>{min}</span>
+        <span>
+          {max} {unit}
+        </span>
+      </span>
     </label>
   );
 }

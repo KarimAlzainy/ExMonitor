@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertOctagon, Droplets, HeartPulse, Thermometer, Zap } from 'lucide-react';
+import { AlertOctagon } from 'lucide-react';
 import { AlertSeverity } from '../../types/telemetry';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { EcgMonitor } from './EcgMonitor';
@@ -33,86 +33,109 @@ function gsrSeverity(gsrStress: number): AlertSeverity {
 export const DashboardTab: React.FC = () => {
   const { vitals, ruleResult, triggerEmergencySOS } = useTelemetry();
 
-  const bannerTone =
+  const statusTone =
     ruleResult.statusColor === 'red'
-      ? 'border-red-500/50 bg-red-500/10 text-red-200'
+      ? {
+          dot: 'bg-critical',
+          title: 'text-critical',
+          border: 'border-critical/30',
+          surface: 'bg-critical/[0.04]'
+        }
       : ruleResult.statusColor === 'yellow'
-        ? 'border-amber-500/40 bg-amber-500/10 text-amber-100'
-        : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100';
+        ? {
+            dot: 'bg-caution',
+            title: 'text-caution',
+            border: 'border-caution/30',
+            surface: 'bg-caution/[0.04]'
+          }
+        : {
+            dot: 'bg-positive',
+            title: 'text-ink-100',
+            border: 'border-white/[0.08]',
+            surface: 'bg-space-900'
+          };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <EcgMonitor />
 
-      <div className={`rounded-2xl border px-4 py-3 ${bannerTone}`}>
+      <section className={`rounded-xl border p-5 ${statusTone.border} ${statusTone.surface}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="font-mono text-sm font-semibold tracking-wide">{ruleResult.hazardTitle}</p>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-slate-300">{ruleResult.nasaRef}</span>
+          <p className="flex items-center gap-2 text-sm font-medium text-ink-100">
+            <span className={`h-2 w-2 rounded-full ${statusTone.dot}`} />
+            <span className={statusTone.title}>{ruleResult.hazardTitle}</span>
+          </p>
+          <span className="font-mono text-[11px] text-ink-500">{ruleResult.nasaRef}</span>
         </div>
-        <p className="mt-1 text-sm text-slate-200">{ruleResult.hazardDescription}</p>
-        <p className="mt-2 font-mono text-xs text-slate-300">{ruleResult.recommendedAction}</p>
+        <p className="mt-3 max-w-3xl text-[13px] leading-5 text-ink-300">{ruleResult.hazardDescription}</p>
+        <p className="mt-2 max-w-3xl text-[13px] leading-5 text-ink-200">{ruleResult.recommendedAction}</p>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <VitalCard
+            label="Heart rate"
+            meta="Chest strap · Lead II"
+            value={vitals.heartRate}
+            unit="BPM"
+            severity={hrSeverity(vitals.heartRate)}
+            range="Target 60–100 BPM"
+          />
+          <VitalCard
+            label="Blood oxygen"
+            meta="Pulse oximetry"
+            value={vitals.spO2}
+            unit="%"
+            severity={spo2Severity(vitals.spO2)}
+            range="Target 95–100% · critical below 88%"
+          />
+          <VitalCard
+            label="Core temperature"
+            meta="Suit thermal loop"
+            value={vitals.bodyTemp.toFixed(1)}
+            unit="°C"
+            severity={tempSeverity(vitals.bodyTemp)}
+            range="Target 36.5–37.5°C"
+          />
+          <VitalCard
+            label="GSR stress"
+            meta="Autonomic load"
+            value={vitals.gsrStress.toFixed(1)}
+            unit="µS"
+            severity={gsrSeverity(vitals.gsrStress)}
+            range="Target 2–8 µS"
+          />
+        </div>
+
+        <RadiationHazardBadge />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <VitalCard
-          title="Heart Rate"
-          subtitle="Chest strap · Lead II"
-          value={vitals.heartRate}
-          unit="BPM"
-          icon={HeartPulse}
-          severity={hrSeverity(vitals.heartRate)}
-          normalRange="60–100 BPM"
-          progressPercent={(vitals.heartRate / 180) * 100}
-          infoTip="MEDB 5.2"
-        />
-        <VitalCard
-          title="SpO2"
-          subtitle="Pulse oximetry"
-          value={vitals.spO2}
-          unit="%"
-          icon={Droplets}
-          severity={spo2Severity(vitals.spO2)}
-          normalRange="95–100%"
-          progressPercent={vitals.spO2}
-          infoTip="Critical < 88%"
-        />
-        <VitalCard
-          title="Core Temp"
-          subtitle="Suit thermal loop"
-          value={vitals.bodyTemp.toFixed(1)}
-          unit="°C"
-          icon={Thermometer}
-          severity={tempSeverity(vitals.bodyTemp)}
-          normalRange="36.5–37.5°C"
-          progressPercent={((vitals.bodyTemp - 35) / 5) * 100}
-          infoTip="LCVG coolant"
-        />
-        <VitalCard
-          title="GSR Stress"
-          subtitle="Autonomic load"
-          value={vitals.gsrStress.toFixed(1)}
-          unit="µS"
-          icon={Zap}
-          severity={gsrSeverity(vitals.gsrStress)}
-          normalRange="2–8 µS"
-          progressPercent={(vitals.gsrStress / 28) * 100}
-          infoTip="Sympathetic"
-        />
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-critical/30 bg-space-900 p-4">
+        <div className="flex items-start gap-3">
+          <AlertOctagon className="mt-0.5 h-5 w-5 shrink-0 text-critical" strokeWidth={1.5} />
+          <div>
+            <p className="text-[13px] font-medium text-ink-100">Transmit crew SOS</p>
+            <p className="mt-0.5 text-[11px] leading-5 text-ink-500">
+              Broadcasts to EXTEM-Mesh and opens the Klaxon takeover.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-[11px] text-ink-500 sm:inline">Crew-declared emergency</span>
+          <button
+            type="button"
+            onClick={() => triggerEmergencySOS()}
+            aria-label="Transmit crew emergency SOS over EXTEM-Mesh"
+            className="h-9 rounded-lg border border-critical/40 bg-critical/[0.08] px-3 text-[12px] font-medium text-critical transition-colors hover:bg-critical/15"
+          >
+            Transmit SOS
+          </button>
+        </div>
       </div>
 
-      <RadiationHazardBadge />
-
-      <button
-        type="button"
-        onClick={() => triggerEmergencySOS()}
-        aria-label="Transmit crew emergency SOS over EXTEM-Mesh"
-        className="flex w-full items-center justify-center gap-3 rounded-2xl border border-red-400/70 bg-red-600 px-6 py-5 font-mono text-lg font-bold tracking-[0.18em] text-white shadow-xl shadow-red-950/50 transition hover:bg-red-500 active:scale-[0.99]"
-      >
-        <AlertOctagon className="h-6 w-6" />
-        TRANSMIT SOS
-      </button>
-      <p className="text-center font-mono text-[10px] text-slate-500">
-        Crew-declared SOS · broadcasts over EXTEM-Mesh · raises the full-screen Klaxon takeover
+      <p className="text-[11px] leading-5 text-ink-500">
+        NASA hazard coverage: space radiation · isolation · distance from Earth · gravity fields · hostile closed
+        environment
       </p>
     </div>
   );

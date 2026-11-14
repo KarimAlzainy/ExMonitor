@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bluetooth, CheckCircle2, Cpu, HardDrive, QrCode, Radio, Smartphone } from 'lucide-react';
+import { Bluetooth, Check, Cpu, HardDrive, LucideIcon, QrCode, Radio, Smartphone } from 'lucide-react';
 import { AiModelTier } from '../../types/telemetry';
 import { DEFAULT_ASTRONAUTS, useTelemetry } from '../../context/TelemetryContext';
 import { meshBroadcast } from '../../services/meshBroadcast';
@@ -10,7 +10,7 @@ const MODEL_OPTIONS: { id: AiModelTier; name: string; note: string }[] = [
   { id: 'phi3', name: 'Phi-3', note: '3.8B mini · recommended at 8 GB RAM' },
   { id: 'llama3', name: 'Llama-3.2', note: 'Mid-tier edge model · 4 GB RAM' },
   { id: 'gemma2', name: 'Gemma-2', note: 'Compact edge model · 2 GB RAM' },
-  { id: 'hardcoded_rules', name: 'No-AI Rules', note: 'NASA cards only · no download' }
+  { id: 'hardcoded_rules', name: 'No-AI rules', note: 'NASA cards only · no download' }
 ];
 
 const PEER_STALE_MS = 20000;
@@ -155,14 +155,14 @@ export const SetupTab: React.FC = () => {
     if (tier === 'hardcoded_rules') {
       setReadyTier('hardcoded_rules');
       setDownloadProgress(100);
-      setDownloadLog(['Rules pack is already onboard. No model weights required.']);
+      setDownloadLog(['The rules pack is already onboard. No model weights required.']);
       return;
     }
 
     setDownloading(true);
     setReadyTier(null);
     setDownloadProgress(0);
-    setDownloadLog([`Requesting ${tierName} edge pack manifest…`]);
+    setDownloadLog([`Requesting the ${tierName} edge pack manifest…`]);
     const chunkCount = 24;
     try {
       const db = await openModelDb();
@@ -209,25 +209,25 @@ export const SetupTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-space-700/60 bg-space-900 p-4 sm:p-5">
-        <h2 className="font-mono text-sm font-semibold text-slate-100">1 · Hardware pairing</h2>
-        <p className="mt-1 text-xs text-slate-400">
-          Scan the chest-strap QR, bind a crew profile, then run the explicit Web Bluetooth handshake. If no strap is
-          present, pairing falls back to a simulated pod so the demo continues.
+      <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+        <h2 className="text-[15px] font-medium text-ink-100">Hardware pairing</h2>
+        <p className="mt-1 max-w-2xl text-[12px] leading-5 text-ink-400">
+          Scan the chest-strap QR, bind a crew profile, then run the Web Bluetooth handshake. Without a strap, pairing
+          falls back to a simulated pod so the demo continues.
         </p>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           <button
             type="button"
             onClick={() => setScannerOpen(true)}
-            className="flex items-center justify-center gap-2 rounded-xl border border-space-700 bg-space-950 px-3 py-4 font-mono text-sm text-slate-100 hover:border-nasa-cyan/40"
+            className="flex h-11 items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[13px] font-medium text-ink-200 transition-colors hover:border-white/15 hover:bg-space-800"
           >
-            <QrCode className="h-4 w-4 text-nasa-cyan" />
+            <QrCode className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
             Scan strap QR
           </button>
 
-          <label className="block rounded-xl border border-space-700 bg-space-950 px-3 py-3">
-            <span className="font-mono text-[10px] uppercase text-slate-400">Bind profile</span>
+          <label className="flex flex-col justify-center rounded-lg border border-white/[0.08] bg-space-850 px-3 py-1.5">
+            <span className="text-[10px] leading-4 text-ink-500">Crew profile</span>
             <select
               value={astronaut.id}
               onChange={(event) => {
@@ -240,10 +240,10 @@ export const SetupTab: React.FC = () => {
                 });
                 audioSynth.playTelemetryPing();
               }}
-              className="mt-1 w-full bg-transparent font-mono text-sm text-slate-100 outline-none"
+              className="w-full bg-transparent text-[13px] leading-5 text-ink-100 outline-none"
             >
               {DEFAULT_ASTRONAUTS.filter((profile) => profile.role !== 'Science Officer').map((profile) => (
-                <option key={profile.id} value={profile.id} className="bg-space-950">
+                <option key={profile.id} value={profile.id} className="bg-space-900">
                   {profile.role}
                 </option>
               ))}
@@ -254,34 +254,38 @@ export const SetupTab: React.FC = () => {
             type="button"
             disabled={isPairing}
             onClick={() => void pairBluetoothStrap(astronaut.strapSerial || 'NASA-STRAP-EVA-409')}
-            className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-4 font-mono text-sm text-emerald-200 disabled:opacity-50"
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-ink-100 px-3 text-[13px] font-medium text-space-950 transition-colors hover:bg-white disabled:opacity-50"
           >
-            <Bluetooth className="h-4 w-4" />
+            <Bluetooth className="h-4 w-4" strokeWidth={1.5} />
             {isPairing ? 'Handshaking…' : 'Bluetooth handshake'}
           </button>
         </div>
 
-        <div className="mt-3 grid gap-2 font-mono text-xs text-slate-300 sm:grid-cols-3">
-          <p>Serial: {astronaut.strapSerial}</p>
-          <p className={astronaut.isPaired ? 'text-emerald-300' : 'text-amber-200'}>
-            {astronaut.isPaired ? (
-              <span className="inline-flex items-center gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Paired
-              </span>
-            ) : (
-              'Not paired'
-            )}
-          </p>
-          <p>BLE heart rate: {rawBleHeartRate ?? '—'} BPM</p>
+        <div className="mt-4 grid gap-3 border-t border-white/[0.06] pt-3 sm:grid-cols-3">
+          <div>
+            <p className="text-[11px] text-ink-500">Strap serial</p>
+            <p className="mt-0.5 font-mono text-[12px] text-ink-200">{astronaut.strapSerial}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-ink-500">Link state</p>
+            <p className={`mt-0.5 flex items-center gap-1.5 text-[12px] ${astronaut.isPaired ? 'text-positive' : 'text-caution'}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${astronaut.isPaired ? 'bg-positive' : 'bg-caution'}`} />
+              {astronaut.isPaired ? 'Paired' : 'Not paired'}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] text-ink-500">BLE heart rate</p>
+            <p className="mt-0.5 font-mono text-[12px] tabular-nums text-ink-200">{rawBleHeartRate ?? '—'} BPM</p>
+          </div>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-space-700/60 bg-space-900 p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="font-mono text-sm font-semibold text-slate-100">2 · Adaptive edge-AI</h2>
-            <p className="mt-1 text-xs text-slate-400">
-              Hardware scan picks a model tier. The pack is written in chunks to IndexedDB for offline triage.
+            <h2 className="text-[15px] font-medium text-ink-100">Adaptive edge AI</h2>
+            <p className="mt-1 max-w-2xl text-[12px] leading-5 text-ink-400">
+              A hardware scan picks a model tier. The pack is written in chunks to IndexedDB for offline triage.
             </p>
           </div>
           <button
@@ -291,21 +295,24 @@ export const SetupTab: React.FC = () => {
               setScanningHardware(true);
               void runHardwareDiagnostic().finally(() => setScanningHardware(false));
             }}
-            className="rounded-lg border border-space-700 px-3 py-1.5 font-mono text-xs text-slate-200 disabled:opacity-50"
+            className="h-9 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15 hover:bg-space-800 disabled:opacity-50"
           >
             {scanningHardware ? 'Scanning…' : 'Rescan hardware'}
           </button>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
           <Stat icon={Cpu} label="RAM" value={`${diagnostic.estimatedRamGb} GB`} />
           <Stat icon={Cpu} label="CPU cores" value={`${diagnostic.cpuCores}`} />
           <Stat icon={HardDrive} label="Storage quota" value={`${diagnostic.availableStorageGb} GB`} />
           <Stat icon={Cpu} label="GPU" value={diagnostic.gpuTier} />
         </div>
-        <p className="mt-2 font-mono text-[11px] text-nasa-cyan">
-          Recommended tier: {MODEL_OPTIONS.find((model) => model.id === diagnostic.recommendedModel)?.name ?? diagnostic.recommendedModel}
-          {' · '}active: {activePresetName}
+        <p className="mt-3 text-[12px] text-ink-400">
+          Recommended{' '}
+          <span className="text-ink-200">
+            {MODEL_OPTIONS.find((model) => model.id === diagnostic.recommendedModel)?.name ?? diagnostic.recommendedModel}
+          </span>
+          {' · '}Active <span className="text-ink-200">{activePresetName}</span>
         </p>
 
         <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -315,15 +322,17 @@ export const SetupTab: React.FC = () => {
               type="button"
               disabled={downloading}
               onClick={() => selectTier(model.id)}
-              className={`rounded-xl border px-3 py-3 text-left transition disabled:opacity-60 ${
-                aiModelTier === model.id ? 'border-nasa-cyan/50 bg-nasa-cyan/10' : 'border-space-700 bg-space-950'
+              className={`rounded-lg border px-3 py-3 text-left transition-colors disabled:opacity-60 ${
+                aiModelTier === model.id
+                  ? 'border-signal/50 bg-signal/[0.06]'
+                  : 'border-white/[0.08] bg-space-950 hover:border-white/15'
               }`}
             >
-              <p className="flex items-center justify-between font-mono text-sm text-slate-100">
+              <p className="flex items-center justify-between gap-2 text-[13px] font-medium text-ink-100">
                 <span>{model.name}</span>
-                {readyTier === model.id && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}
+                {readyTier === model.id && <Check className="h-4 w-4 text-positive" strokeWidth={1.5} />}
               </p>
-              <p className="text-xs text-slate-400">{model.note}</p>
+              <p className="mt-0.5 text-[11px] text-ink-500">{model.note}</p>
             </button>
           ))}
         </div>
@@ -332,37 +341,37 @@ export const SetupTab: React.FC = () => {
           type="button"
           disabled={downloading}
           onClick={() => void cacheModelPack(aiModelTier)}
-          className="mt-3 w-full rounded-xl bg-nasa-cyan py-3 font-mono text-sm font-semibold text-space-950 disabled:opacity-50"
+          className="mt-4 h-11 w-full rounded-lg bg-ink-100 text-[13px] font-medium text-space-950 transition-colors hover:bg-white disabled:opacity-50"
         >
           {downloading ? `Caching pack ${downloadProgress}%` : `Cache ${activePresetName} on this device`}
         </button>
         <div
-          className="mt-2 h-2 overflow-hidden rounded-full bg-space-950"
+          className="mt-2 h-1.5 overflow-hidden rounded-full bg-space-800"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={downloadProgress}
           aria-label="Edge model pack download"
         >
-          <div className="h-full bg-nasa-cyan transition-all" style={{ width: `${downloadProgress}%` }} />
+          <div className="h-full bg-signal transition-[width]" style={{ width: `${downloadProgress}%` }} />
         </div>
-        <ul className="mt-2 space-y-1 font-mono text-[11px] text-slate-400">
+        <ul className="mt-2 space-y-1 font-mono text-[10.5px] leading-4 text-ink-500">
           {downloadLog.map((line) => (
             <li key={line}>{line}</li>
           ))}
           {readyTier === aiModelTier && (
-            <li className="text-emerald-300">On-device pack ready for {activePresetName}.</li>
+            <li className="text-positive">On-device pack ready for {activePresetName}.</li>
           )}
         </ul>
       </section>
 
-      <section className="rounded-2xl border border-space-700/60 bg-space-900 p-4 sm:p-5">
-        <h2 className="font-mono text-sm font-semibold text-slate-100">3 · EXTEM-Mesh and PWA</h2>
-        <p className="mt-1 text-xs text-slate-400">
+      <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+        <h2 className="text-[15px] font-medium text-ink-100">EXTEM-Mesh and offline app</h2>
+        <p className="mt-1 max-w-2xl text-[12px] leading-5 text-ink-400">
           Nodes announce every 7 seconds over the local relay or BroadcastChannel. A newly discovered node gets an
           automatic handshake.
         </p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Stat icon={Radio} label="Local node" value={nodeId} />
           <Stat icon={Radio} label="Relay" value={isMeshOnline ? 'Port 8080 up' : 'BroadcastChannel only'} />
           <Stat
@@ -379,27 +388,24 @@ export const SetupTab: React.FC = () => {
             meshBroadcast.announcePresence(astronaut.name, astronaut.role);
             audioSynth.playTelemetryPing();
           }}
-          className="mt-4 rounded-xl border border-space-700 px-4 py-2 font-mono text-sm text-slate-100 hover:border-nasa-cyan/40"
+          className="mt-4 h-9 rounded-lg border border-white/[0.08] bg-space-850 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15 hover:bg-space-800"
         >
-          Announce / handshake now
+          Announce and handshake now
         </button>
 
-        <ul className="mt-3 space-y-2">
+        <ul className="mt-3 divide-y divide-white/[0.06] border-t border-white/[0.06]">
           {peers.length === 0 && (
-            <li className="font-mono text-xs text-slate-400">
+            <li className="py-3 text-[12px] leading-5 text-ink-500">
               No other crew nodes yet. Open a second tab or phone on the hotspot; discovery is automatic.
             </li>
           )}
           {peers.map((peer) => (
-            <li
-              key={peer.nodeId}
-              className="flex items-center justify-between gap-3 rounded-xl border border-space-800 bg-space-950 px-3 py-2 font-mono text-xs text-slate-200"
-            >
-              <span className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+            <li key={peer.nodeId} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <span className="flex items-center gap-2 text-[12px] text-ink-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-positive" />
                 {peer.name} · {peer.role}
               </span>
-              <span className="text-[10px] text-slate-500">
+              <span className="font-mono text-[10.5px] text-ink-500">
                 {peer.nodeId} · seen {Math.max(0, Math.round((Date.now() - peer.seenAt) / 1000))}s ago
               </span>
             </li>
@@ -412,14 +418,24 @@ export const SetupTab: React.FC = () => {
   );
 };
 
-function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+function Stat({
+  icon: Icon,
+  label,
+  value
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="rounded-xl border border-space-800 bg-space-950 px-3 py-2">
-      <div className="flex items-center gap-1.5 text-slate-400">
-        <Icon className="h-3.5 w-3.5" />
-        <span className="font-mono text-[10px] uppercase">{label}</span>
+    <div className="rounded-lg border border-white/[0.06] bg-space-950 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-[11px] text-ink-500">
+        <Icon className="h-4 w-4" strokeWidth={1.5} />
+        {label}
       </div>
-      <p className="mt-1 truncate font-mono text-xs text-slate-100">{value}</p>
+      <p className="mt-1 truncate text-[13px] text-ink-100" title={value}>
+        {value}
+      </p>
     </div>
   );
 }

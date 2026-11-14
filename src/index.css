@@ -4,7 +4,7 @@
 
 html {
   color-scheme: dark;
-  background-color: #07090e;
+  background-color: #08090c;
 }
 
 html,
@@ -15,7 +15,10 @@ body,
 
 body {
   min-height: 100dvh;
-  background-color: #07090e;
+  background-color: #08090c;
+  color: #e9ecf0;
+  font-feature-settings: 'tnum' 1;
+  -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
 }
 
@@ -26,13 +29,18 @@ input {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(0, 240, 255, 0.7);
+  outline: 2px solid #7aa7c7;
   outline-offset: 2px;
+}
+
+::selection {
+  background: #26465c;
+  color: #ffffff;
 }
 
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #23304b transparent;
+  scrollbar-color: #2a3038 transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -41,7 +49,7 @@ input {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #23304b;
+  background: #2a3038;
   border-radius: 999px;
 }
 
@@ -50,7 +58,49 @@ input {
 }
 
 input[type='range'] {
-  accent-color: #00f0ff;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 999px;
+  background: #e9ecf0;
+}
+
+input[type='range']::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+input[type='range']::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #7aa7c7;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #e9ecf0;
 }
 
 /* Keep the emergency takeover readable for users who cannot tolerate flashing. */

@@ -9,44 +9,38 @@ export default {
     extend: {
       colors: {
         space: {
-          950: '#07090e',
-          900: '#0b0f17',
-          850: '#101623',
-          800: '#161f31',
-          700: '#23304b',
-          600: '#344569',
+          950: '#08090c',
+          900: '#0d0f13',
+          850: '#12151a',
+          800: '#181c22',
+          700: '#262b33',
+          600: '#3a414c',
         },
-        nasa: {
-          red: '#fc3d21',
-          blue: '#0b3d91',
-          cyan: '#00f0ff',
+        ink: {
+          100: '#e9ecf0',
+          200: '#c9ced6',
+          300: '#a3aab5',
+          400: '#7d8591',
+          500: '#5d6571',
         },
-        vital: {
-          emerald: '#10b981',
-          amber: '#f59e0b',
-          crimson: '#ef4444',
-        }
+        signal: {
+          DEFAULT: '#7aa7c7',
+          strong: '#9bc0da',
+          dim: '#5d8eae',
+        },
+        phosphor: '#59c98d',
+        positive: '#59c98d',
+        caution: '#d7a45a',
+        critical: {
+          DEFAULT: '#e56767',
+          strong: '#b23a3a',
+        },
       },
       fontFamily: {
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'monospace'],
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
-      animation: {
-        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'strobe': 'strobe 0.7s ease-in-out infinite',
-        'scanline': 'scanline 8s linear infinite',
-      },
-      keyframes: {
-        strobe: {
-          '0%, 100%': { opacity: '1', backgroundColor: 'rgba(239, 68, 68, 0.25)' },
-          '50%': { opacity: '0.4', backgroundColor: 'rgba(239, 68, 68, 0.05)' },
-        },
-        scanline: {
-          '0%': { transform: 'translateY(-100%)' },
-          '100%': { transform: 'translateY(1000%)' }
-        }
-      }
     },
   },
   plugins: [],
-}
+};

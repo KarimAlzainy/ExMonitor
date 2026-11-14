@@ -185,9 +185,9 @@ async function generateEdgeAiSimulation(
   let advice = '';
 
   if (q.includes('chest') || q.includes('heart') || q.includes('pain') || vitals.heartRate > 130) {
-    advice = `### 🚨 FLIGHT SURGEON TRIAGE: CARDIAC & CHEST EVALUATION
+    advice = `### Cardiac and chest evaluation
 **Astronaut:** ${astronaut.name} (${astronaut.role})
-**Live Biometrics:** HR **${vitals.heartRate} BPM** | SpO2 **${vitals.spO2}%** | GSR Stress **${vitals.gsrStress.toFixed(1)} uS**
+**Live biometrics:** HR **${vitals.heartRate} BPM** | SpO2 **${vitals.spO2}%** | GSR stress **${vitals.gsrStress.toFixed(1)} µS**
 
 1. **Clinical Assessment:** 
 ${vitals.heartRate > 120 
@@ -200,9 +200,9 @@ ${vitals.heartRate > 120
 - **Diagnostics:** 3-lead ECG wave telemetry is currently locked and transmitting nominal QRS complexes.
 - **Med-Pack Action:** If pain radiates or escalates, administer 1x chewable Aspirin (325 mg) from Habitat Med-Kit B.`;
   } else if (q.includes('dizzy') || q.includes('breath') || q.includes('oxygen') || vitals.spO2 < 92) {
-    advice = `### ⚠️ FLIGHT SURGEON TRIAGE: RESPIRATORY & OXYGENATION
+    advice = `### Respiratory and oxygenation
 **Astronaut:** ${astronaut.name} (${astronaut.role})
-**Live Biometrics:** SpO2 **${vitals.spO2}%** | Core Temp **${vitals.bodyTemp.toFixed(1)}°C**
+**Live biometrics:** SpO2 **${vitals.spO2}%** | Core temp **${vitals.bodyTemp.toFixed(1)}°C**
 
 1. **Clinical Assessment:** 
 ${vitals.spO2 < 88 
@@ -214,9 +214,9 @@ ${vitals.spO2 < 88
 - **Breathing Technique:** Perform 5 slow diaphragmatic breaths (4s inhale, 4s hold, 4s exhale).
 - **Vestibular Anchor:** Fix gaze on an internal reference marker; avoid sudden head movements.`;
   } else if (q.includes('radiation') || q.includes('sun') || q.includes('flare') || vitals.radiationDoseRate > 0.3) {
-    advice = `### ☢️ FLIGHT SURGEON TRIAGE: IONIZING RADIATION (NASA MR092L)
+    advice = `### Ionizing radiation (NASA MR092L)
 **Astronaut:** ${astronaut.name} (${astronaut.role})
-**Live Biometrics:** Ambient Flux **${vitals.radiationDoseRate.toFixed(2)} mSv/hr** | Cumulative **${vitals.cumulativeRadiation.toFixed(2)} mSv**
+**Live biometrics:** Ambient flux **${vitals.radiationDoseRate.toFixed(2)} mSv/hr** | Cumulative **${vitals.cumulativeRadiation.toFixed(2)} mSv**
 
 1. **Radiological Assessment:** 
 ${vitals.radiationDoseRate >= 1.0 
@@ -228,9 +228,9 @@ ${vitals.radiationDoseRate >= 1.0
 - **Prophylaxis:** Ingest anti-emetic countermeasure (Ondansetron 8mg) if nausea or visual phosphenes occur.
 - **Dose Tracking:** Telemetry timestamp logged to EXTEM-Mesh radiation registry.`;
   } else {
-    advice = `### 🩺 FLIGHT SURGEON STATUS REPORT
+    advice = `### Flight surgeon status
 **Astronaut:** ${astronaut.name} (${astronaut.role})
-**Telemetry Snapshot:** HR **${vitals.heartRate} BPM** | SpO2 **${vitals.spO2}%** | Temp **${vitals.bodyTemp.toFixed(1)}°C** | GSR **${vitals.gsrStress.toFixed(1)} uS** | Rad **${vitals.radiationDoseRate.toFixed(2)} mSv/hr**
+**Telemetry snapshot:** HR **${vitals.heartRate} BPM** | SpO2 **${vitals.spO2}%** | Temp **${vitals.bodyTemp.toFixed(1)}°C** | GSR **${vitals.gsrStress.toFixed(1)} µS** | Rad **${vitals.radiationDoseRate.toFixed(2)} mSv/hr**
 
 1. **Telemetry Correlation:** 
 Your query regarding "${userQuery}" has been cross-referenced with your live chest strap sensors. All biometric indicators currently remain within the nominal green envelope (NASA MEDB 5.2 baseline).
@@ -262,14 +262,13 @@ async function generateDeterministicAdvice(
   onToken: (token: string) => void
 ): Promise<string> {
   const { userQuery, vitals } = payload;
-  const text = `[DETERMINISTIC NASA RULES MODE - ZERO ML]
+  const text = `### NASA rules mode
 Evaluated query: "${userQuery}"
-Telemetry: HR ${vitals.heartRate} BPM, SpO2 ${vitals.spO2}%, Temp ${vitals.bodyTemp.toFixed(1)}°C, Rad ${vitals.radiationDoseRate.toFixed(2)} mSv/hr.
+Telemetry: HR ${vitals.heartRate} BPM, SpO2 ${vitals.spO2}%, temp ${vitals.bodyTemp.toFixed(1)}°C, rad ${vitals.radiationDoseRate.toFixed(2)} mSv/hr.
 
-NASA Decision Support Output:
-1. All hardcoded aerospace safety rules are being scanned in 0ms.
-2. For specific symptom protocols, use the quick-action NASA Symptom buttons above.
-3. If any metric breaches critical limits, the Crew Emergency Klaxon will automatically trigger.`;
+1. Every aerospace safety rule is checked locally before this answer is produced.
+2. For a specific protocol, use the symptom buttons above.
+3. If any metric breaches a critical limit, the crew emergency Klaxon triggers automatically.`;
 
   const words = text.split(' ');
   for (const w of words) {

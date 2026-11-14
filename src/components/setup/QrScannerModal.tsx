@@ -135,39 +135,39 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, o
         role="dialog"
         aria-modal="true"
         aria-label="Strap QR scanner"
-        className="w-full max-w-lg rounded-2xl border border-space-700 bg-space-900 p-4 shadow-2xl"
+        className="w-full max-w-lg rounded-xl border border-white/[0.08] bg-space-900 p-5"
       >
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Camera className="h-4 w-4 text-nasa-cyan" />
-            <h3 className="font-mono text-sm text-slate-100">Strap QR scanner</h3>
+            <Camera className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
+            <h3 className="text-[15px] font-medium text-ink-100">Strap QR scanner</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-300 hover:bg-space-800"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-space-850 hover:text-ink-100"
             aria-label="Close scanner"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border border-space-800 bg-black">
+        <div className="relative overflow-hidden rounded-lg border border-white/[0.08] bg-black">
           <video ref={videoRef} className="h-64 w-full object-cover" muted playsInline />
-          <div className="pointer-events-none absolute inset-6 rounded-xl border-2 border-nasa-cyan/70" />
-          <ScanLine className="pointer-events-none absolute left-8 right-8 top-1/2 h-6 -translate-y-1/2 text-nasa-cyan/80" />
+          <div className="pointer-events-none absolute inset-6 rounded-lg border border-white/30" />
+          <ScanLine className="pointer-events-none absolute left-8 right-8 top-1/2 h-6 -translate-y-1/2 text-signal/60" strokeWidth={1.5} />
         </div>
 
-        <p className="mt-3 font-mono text-xs text-slate-300">{status}</p>
-        {cameraError && <p className="mt-1 text-xs text-amber-300">{cameraError}</p>}
-        <p className="mt-1 font-mono text-[10px] text-slate-500">Accepted format: NASA-STRAP-*</p>
+        <p className="mt-3 text-[12px] leading-5 text-ink-300">{status}</p>
+        {cameraError && <p className="mt-1 text-[11px] leading-5 text-caution">{cameraError}</p>}
+        <p className="mt-1 font-mono text-[10px] text-ink-500">Accepted format: NASA-STRAP-*</p>
 
         <button
           type="button"
           onClick={() => acceptSerial(SIMULATED_SERIAL)}
-          className="mt-4 w-full rounded-xl border border-nasa-cyan/40 bg-nasa-cyan/10 py-3 font-mono text-sm text-nasa-cyan hover:bg-nasa-cyan/20"
+          className="mt-4 h-11 w-full rounded-lg bg-ink-100 text-[13px] font-medium text-space-950 transition-colors hover:bg-white"
         >
-          Simulate scan · {SIMULATED_SERIAL}
+          Simulate scan · <span className="font-mono">{SIMULATED_SERIAL}</span>
         </button>
       </div>
     </div>

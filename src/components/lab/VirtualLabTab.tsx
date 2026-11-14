@@ -2,12 +2,19 @@ import React from 'react';
 import { useTelemetry } from '../../context/TelemetryContext';
 
 const STEPS = [
-  'Open Demo controls and start in Normal Mode so the ECG sits near 72 BPM and 98% SpO2.',
-  'On Setup & Pairing, simulate the strap QR (NASA-STRAP-EVA-409), bind a crew role, then run the Bluetooth handshake.',
-  'Ask the AI Flight Surgeon about dizziness. The live numbers on the telemetry pill travel with the question.',
-  'Switch the demo panel to Emergency Danger Mode. SpO2 falls to 84% and radiation jumps to 2.45 mSv/hr, which trips the Klaxon and the mesh SOS.',
+  'Open Demo controls and start in Normal mode so the ECG sits near 72 BPM and 98% SpO2.',
+  'Under Pairing, scan the simulated strap label (NASA-STRAP-EVA-409), bind a crew role, then run the Bluetooth handshake.',
+  'Ask the flight surgeon about dizziness. The live snapshot travels with the question.',
+  'Switch the demo panel to Emergency danger mode. SpO2 falls to 84% and radiation jumps to 2.45 mSv/hr, which trips the Klaxon and the mesh SOS.',
   'Acknowledge the alert to silence the alarm. A second browser on the same hotspot, with the port 8080 relay running, receives the same overlay.'
 ];
+
+const TIER_NAMES: Record<string, string> = {
+  phi3: 'Phi-3',
+  llama3: 'Llama-3.2',
+  gemma2: 'Gemma-2',
+  hardcoded_rules: 'No-AI rules'
+};
 
 export const VirtualLabTab: React.FC = () => {
   const { vitals, ruleResult, nodeId, aiModelTier } = useTelemetry();
@@ -19,7 +26,7 @@ export const VirtualLabTab: React.FC = () => {
     },
     {
       name: 'Isolation',
-      detail: `Flight surgeon tier is ${aiModelTier}. Symptom cards stay available when the language model cannot run.`
+      detail: `Flight surgeon tier is ${TIER_NAMES[aiModelTier] ?? aiModelTier}. Symptom cards stay available when the language model cannot run.`
     },
     {
       name: 'Distance from Earth',
@@ -35,30 +42,54 @@ export const VirtualLabTab: React.FC = () => {
     }
   ];
 
+  const statusTone =
+    ruleResult.statusColor === 'red'
+      ? { dot: 'bg-critical', text: 'text-critical' }
+      : ruleResult.statusColor === 'yellow'
+        ? { dot: 'bg-caution', text: 'text-caution' }
+        : { dot: 'bg-positive', text: 'text-ink-200' };
+
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-space-700/60 bg-space-900 p-4 sm:p-5">
-        <h2 className="font-mono text-sm font-semibold text-slate-100">Virtual lab · five hazards of human spaceflight</h2>
-        <p className="mt-2 text-sm text-slate-300">
-          Current rules status: {ruleResult.hazardTitle}. {ruleResult.nasaRef}.
+      <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+        <h2 className="text-[15px] font-medium text-ink-100">Five hazards of human spaceflight</h2>
+        <p className="mt-1 max-w-2xl text-[12px] leading-5 text-ink-400">
+          How this console answers each hazard while Earth is up to 22 minutes away.
         </p>
-        <div className="mt-4 grid gap-2">
+
+        <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
+          <span className={`h-1.5 w-1.5 rounded-full ${statusTone.dot}`} />
+          <span className={statusTone.text}>{ruleResult.hazardTitle}</span>
+          <span className="font-mono text-[10.5px] text-ink-500">{ruleResult.nasaRef}</span>
+        </p>
+
+        <ul className="mt-4 divide-y divide-white/[0.06] border-t border-white/[0.06]">
           {hazards.map((hazard, index) => (
-            <article key={hazard.name} className="rounded-xl border border-space-800 bg-space-950 px-3 py-3">
-              <p className="font-mono text-xs text-nasa-cyan">
-                {index + 1}. {hazard.name}
-              </p>
-              <p className="mt-1 text-sm text-slate-200">{hazard.detail}</p>
-            </article>
+            <li
+              key={hazard.name}
+              className="grid gap-1 py-3 sm:grid-cols-[28px_170px_minmax(0,1fr)] sm:items-baseline sm:gap-4"
+            >
+              <span className="font-mono text-[10.5px] tabular-nums text-ink-500">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <span className="text-[13px] font-medium text-ink-100">{hazard.name}</span>
+              <span className="text-[13px] leading-5 text-ink-300">{hazard.detail}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      <section className="rounded-2xl border border-space-700/60 bg-space-900 p-4 sm:p-5">
-        <h2 className="font-mono text-sm font-semibold text-slate-100">Judge walkthrough</h2>
-        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-200">
-          {STEPS.map((step) => (
-            <li key={step}>{step}</li>
+      <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+        <h2 className="text-[15px] font-medium text-ink-100">Judge walkthrough</h2>
+        <p className="mt-1 text-[12px] text-ink-400">A short path through the demo.</p>
+        <ol className="mt-4 space-y-3">
+          {STEPS.map((step, index) => (
+            <li key={step} className="flex gap-3">
+              <span className="w-5 shrink-0 font-mono text-[10.5px] leading-5 tabular-nums text-ink-500">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <span className="text-[13px] leading-5 text-ink-300">{step}</span>
+            </li>
           ))}
         </ol>
       </section>

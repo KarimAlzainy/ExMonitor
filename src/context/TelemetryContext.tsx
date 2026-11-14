@@ -258,7 +258,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         severity: 'critical',
         title:
           customTitle ||
-          (vitalEmergency ? currentRule.hazardTitle : 'CREW-DECLARED MEDICAL EMERGENCY'),
+          (vitalEmergency ? currentRule.hazardTitle : 'Crew-declared medical emergency'),
         description:
           customDesc ||
           (vitalEmergency

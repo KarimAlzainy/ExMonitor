@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TelemetryProvider } from './context/TelemetryContext';
 import { Header } from './components/layout/Header';
-import { AppTab, TabNavigation } from './components/layout/TabNavigation';
+import { AppTab } from './components/layout/TabNavigation';
 import { DashboardTab } from './components/dashboard/DashboardTab';
 import { AiCopilotTab } from './components/ai/AiCopilotTab';
 import { SetupTab } from './components/setup/SetupTab';
@@ -18,19 +18,16 @@ const AppShell: React.FC = () => {
   }, [tab]);
 
   return (
-    <div className="min-h-screen bg-space-950 text-slate-100">
-      <div className="sticky top-0 z-40 shadow-lg shadow-black/20">
-        <Header onOpenSimulator={() => setSimulatorOpen(true)} />
-        <TabNavigation active={tab} onChange={setTab} />
-      </div>
-      <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-6 sm:py-6">
+    <div className="min-h-screen bg-space-950 text-ink-100">
+      <Header activeTab={tab} onTabChange={setTab} onOpenSimulator={() => setSimulatorOpen(true)} />
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {tab === 'telemetry' && <DashboardTab />}
         {tab === 'surgeon' && <AiCopilotTab />}
         {tab === 'setup' && <SetupTab />}
         {tab === 'lab' && <VirtualLabTab />}
       </main>
-      <footer className="mx-auto w-full max-w-6xl px-4 pb-6 pt-2 text-center font-mono text-[10px] tracking-wide text-slate-600">
-        NASA Space Apps Challenge · MR092L / MEDB 5.2 · Offline-first edge triage
+      <footer className="mx-auto w-full max-w-6xl px-4 pb-8 pt-2 text-[11px] text-ink-500 sm:px-6">
+        NASA Space Apps Challenge · MR092L / MEDB 5.2 · Earth delay up to 22 min
       </footer>
       <SimulatorDrawer open={simulatorOpen} onClose={() => setSimulatorOpen(false)} />
       <EmergencyOverlay />
@@ -60,15 +57,15 @@ class TelemetryErrorBoundary extends React.Component<{ children: React.ReactNode
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen items-center justify-center bg-space-950 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-red-500/40 bg-space-900 p-5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-red-300">Telemetry link lost</p>
-            <h1 className="mt-2 font-mono text-lg font-semibold text-slate-100">The console hit an unexpected fault.</h1>
-            <p className="mt-2 break-words font-mono text-xs text-slate-400">{this.state.message}</p>
+        <div className="flex min-h-screen items-center justify-center bg-space-950 p-6">
+          <div className="w-full max-w-md rounded-xl border border-critical/30 bg-space-900 p-6">
+            <p className="text-[11px] font-medium text-critical">Telemetry link lost</p>
+            <h1 className="mt-2 text-lg font-medium text-ink-100">The console hit an unexpected fault</h1>
+            <p className="mt-2 break-words font-mono text-[11px] leading-5 text-ink-400">{this.state.message}</p>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mt-4 w-full rounded-xl bg-nasa-cyan py-3 font-mono text-sm font-semibold text-space-950"
+              className="mt-5 h-11 w-full rounded-lg bg-ink-100 text-sm font-medium text-space-950 transition-colors hover:bg-white"
             >
               Reload console
             </button>
