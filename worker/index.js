@@ -12,6 +12,14 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // A visitor who typed the address without https is sent to the secure
+    // version first, so the camera, notifications and install work.
+    const local = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(url.hostname);
+    if (url.protocol === 'http:' && !local) {
+      url.protocol = 'https:';
+      return Response.redirect(url.toString(), 301);
+    }
+
     if (url.pathname === '/relay') {
       const upgrade = request.headers.get('upgrade');
       if (!upgrade || upgrade.toLowerCase() !== 'websocket') {
