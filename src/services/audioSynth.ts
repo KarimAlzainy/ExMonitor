@@ -1,5 +1,5 @@
 /**
- * Web Audio API Synthesizer for NASA Sound FX
+ * Web Audio API synthesizer for the console sound effects (simulated alerts).
  * Works 100% offline without external audio files.
  */
 class AerospaceAudioSynthesizer {
@@ -92,7 +92,7 @@ class AerospaceAudioSynthesizer {
   }
 
   /**
-   * NASA Spacecraft Master Alarm / Emergency Klaxon
+   * Simulated spacecraft master alarm / emergency klaxon.
    * Oscillating two-tone warble (900 Hz to 1400 Hz) that repeats until stopped.
    */
   public startEmergencyKlaxon() {

@@ -25,7 +25,7 @@ const MODELS = [
     name: 'No AI',
     file: 'exmonitor-no-ai',
     download: 'nothing',
-    note: 'Written NASA action cards only. Works on every device and never needs the internet.'
+    note: 'Written action cards only. Works on every device and never needs the internet.'
   }
 ];
 
@@ -194,7 +194,7 @@ function updateDownload() {
       : '';
   const assistant =
     model.id === 'none'
-      ? 'No model download. The written NASA action cards do all the work.'
+      ? 'No model download. The written action cards do all the work.'
       : `The first use downloads ${model.download} once; after that the assistant works offline.`;
   meta.textContent = `${assistant}${size}`;
 }
@@ -222,7 +222,7 @@ function updateDevice() {
       'This is a phone browser. Open the copy below and add it to the home screen; the ZIP is for a computer.';
   } else if (state.webgpu === false) {
     summary.textContent =
-      'This browser cannot run the on-device models. No AI is the safe choice, and the written NASA rules still work. You can pick an AI copy for a different computer.';
+      'This browser cannot run the on-device models. No AI is the safe choice, and the written rules still work. You can pick an AI copy for a different computer.';
   } else if (state.webgpu == null) {
     summary.textContent = 'Checking what this browser can do...';
   } else if (state.memory == null) {
