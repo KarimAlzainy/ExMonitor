@@ -15,3 +15,6 @@ site/app
 site/downloads
 site/downloads.json
 .wrangler
+
+# Local build output log
+build.log
