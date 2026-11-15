@@ -44,17 +44,19 @@ const AppShell: React.FC<{ onRunSetup: () => void }> = ({ onRunSetup }) => {
         {tab === 'settings' && <SettingsTab onRunSetup={onRunSetup} />}
         {tab === 'lab' && <GuideTab />}
       </main>
-      <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-6 pt-2 text-[12px] text-ink-500 sm:px-6">
-        <span>NASA Space Apps Challenge · MR092L / MEDB 5.2 · Earth delay up to 22 min</span>
-        <a
-          href="sensors.html"
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium text-ink-400 transition-colors hover:text-ink-100"
-        >
-          Sensor page
-        </a>
-      </footer>
+      {!fillsWindow && (
+        <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-8 pt-2 text-[12px] text-ink-500 sm:px-6">
+          <span>NASA Space Apps Challenge · MR092L / MEDB 5.2 · Earth delay up to 22 min</span>
+          <a
+            href="sensors.html"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-ink-400 transition-colors hover:text-ink-100"
+          >
+            Sensor page
+          </a>
+        </footer>
+      )}
       <SenderAlertPanel />
       <EmergencyOverlay />
     </div>

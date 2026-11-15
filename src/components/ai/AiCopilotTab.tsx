@@ -225,7 +225,9 @@ export const AiCopilotTab: React.FC = () => {
   }, [aiModelTier]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    const element = scrollRef.current;
+    if (!element) return;
+    element.scrollTop = element.scrollHeight;
   }, [messages]);
 
   const checkOllama = useCallback(async () => {
@@ -250,21 +252,6 @@ export const AiCopilotTab: React.FC = () => {
   useEffect(() => {
     if (provider === 'ollama') void checkOllama();
   }, [provider, checkOllama]);
-
-  const subtitle = [
-    provider === 'ollama'
-      ? `Answers come from the local Ollama model "${ollama.model}". No browser download and no graphics memory needed.`
-      : rulesMode
-        ? 'Written NASA action cards and the rules engine. No language model is used.'
-        : preparing
-          ? `Downloading and preparing ${tierName}. This happens once.`
-          : modelReady
-            ? `${tierName} is loaded on this device.`
-            : `${tierName} is selected. The first question downloads it once, then it works offline.`,
-    doctorMode
-      ? 'Doctor mode carries the prompt and the live readings with each question.'
-      : 'Assistant mode is plain chat: no prompt and no readings.'
-  ].join(' ');
 
   const modelState =
     provider === 'ollama'
@@ -513,29 +500,32 @@ export const AiCopilotTab: React.FC = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-[18px] font-medium text-ink-100">
-            AI assistant
-            <InfoTip
-              text="Two ways to answer. On-device downloads a model once into this browser and then runs offline. Ollama uses a model already installed on this computer. Doctor mode attaches the medical prompt and the live readings; Assistant mode is plain chat."
-              label="AI assistant"
-            />
-          </h2>
-          <p className="mt-1 max-w-2xl text-[13px] leading-5 text-ink-400">{subtitle}</p>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h2 className="flex items-center gap-2 text-[17px] font-medium text-ink-100">
+          AI assistant
+          <InfoTip
+            text="Two ways to answer. On-device downloads a model once into this browser and then runs offline. Ollama uses a model already installed on this computer. Doctor mode attaches the medical prompt and the live readings; Assistant mode is plain chat."
+            label="AI assistant"
+          />
+        </h2>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="flex items-center gap-1.5 text-[12px] text-ink-400">
+            <span className={`h-1.5 w-1.5 rounded-full ${modelState.dot}`} />
+            {modelState.label}
+          </span>
+          <Segmented
+            label="Chat mode"
+            value={chatMode}
+            onChange={(id) => setChatMode(id as ChatMode)}
+            options={[
+              { id: 'doctor', label: 'Doctor mode', icon: HeartPulse },
+              { id: 'assistant', label: 'Assistant', icon: Bot }
+            ]}
+          />
         </div>
-        <Segmented
-          label="Chat mode"
-          value={chatMode}
-          onChange={(id) => setChatMode(id as ChatMode)}
-          options={[
-            { id: 'doctor', label: 'Doctor mode', icon: HeartPulse },
-            { id: 'assistant', label: 'Assistant', icon: Bot }
-          ]}
-        />
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span className="text-[11px] font-medium uppercase tracking-wide text-ink-500">Answers from</span>
         <Segmented
           label="Answer source"
@@ -546,15 +536,11 @@ export const AiCopilotTab: React.FC = () => {
             { id: 'ollama', label: 'Ollama', icon: Server }
           ]}
         />
-        <span className="flex items-center gap-1.5 text-[12px] text-ink-400">
-          <span className={`h-1.5 w-1.5 rounded-full ${modelState.dot}`} />
-          {modelState.label}
-        </span>
         {provider === 'ondevice' && !rulesMode && !modelReady && !preparing && (
           <button
             type="button"
             onClick={() => void downloadNow()}
-            className="flex h-8 items-center rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
+            className="ml-auto flex h-8 items-center rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
           >
             Download now
           </button>
@@ -571,199 +557,205 @@ export const AiCopilotTab: React.FC = () => {
         )}
       </div>
 
-      {provider === 'ollama' && showServer && (
-        <div className="rounded-lg border border-white/[0.08] bg-space-900 p-3">
-          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <label className="block">
-              <span className="text-[11px] font-medium text-ink-300">Ollama server</span>
-              <input
-                value={ollama.url}
-                onChange={(event) => setOllama((current) => ({ ...current, url: event.target.value }))}
-                placeholder="http://localhost:11434"
-                className="mt-1 h-9 w-full rounded-lg border border-white/[0.08] bg-space-950 px-2.5 font-mono text-[12px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
-              />
-            </label>
-            <label className="block">
-              <span className="text-[11px] font-medium text-ink-300">Model</span>
-              <input
-                value={ollama.model}
-                list="ollama-models"
-                onChange={(event) => setOllama((current) => ({ ...current, model: event.target.value }))}
-                placeholder="phi3"
-                className="mt-1 h-9 w-full rounded-lg border border-white/[0.08] bg-space-950 px-2.5 font-mono text-[12px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
-              />
-              <datalist id="ollama-models">
-                {ollamaModels.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
-            </label>
-            <button
-              type="button"
-              onClick={() => void checkOllama()}
-              disabled={ollamaStatus === 'checking'}
-              className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15 disabled:opacity-50"
-            >
-              {ollamaStatus === 'checking' ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.8} />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.6} />
-              )}
-              Check
-            </button>
-          </div>
-          {ollamaMessage && (
-            <p
-              className={`mt-2 text-[11.5px] leading-5 ${
-                ollamaStatus === 'error' ? 'text-caution' : 'text-ink-400'
-              }`}
-            >
-              {ollamaMessage}
-            </p>
-          )}
-        </div>
-      )}
-
-      {doctorMode && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2 text-[12px] text-ink-400">
-          <span className="flex items-center gap-1.5 text-ink-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-positive" />
-            Live readings
-          </span>
-          <span className="font-mono tabular-nums">HR {vitals.heartRate} BPM</span>
-          <span className="font-mono tabular-nums">SpO2 {vitals.spO2}%</span>
-          <span className="font-mono tabular-nums">Temp {vitals.bodyTemp.toFixed(1)}°C</span>
-          <span className="font-mono tabular-nums">GSR {vitals.gsrStress.toFixed(1)} μS</span>
-          <span className="font-mono tabular-nums">Rad {vitals.radiationDoseRate.toFixed(2)} mSv/hr</span>
-          <span className="text-ink-400">
-            {vitals.source === 'sensor' ? 'From the sensor' : 'Practice readings'}
-          </span>
-        </div>
-      )}
-
-      {showSuggestion && (
-        <div className="rounded-lg border border-signal/25 bg-signal/[0.04] px-4 py-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <Cpu className="mt-0.5 h-4 w-4 shrink-0 text-signal-strong" strokeWidth={1.5} />
-              <div>
-                <p className="text-[14px] font-medium text-ink-100">
-                  {rulesMode
-                    ? 'This device can run an on-device assistant'
-                    : `Suggested for this device: ${modelName(suggested)}`}
-                </p>
-                <p className="mt-1 max-w-xl text-[13px] leading-5 text-ink-400">
-                  {recommendationReason(
-                    diagnostic.estimatedRamGb,
-                    diagnostic.webGpu,
-                    diagnostic.gpuTier,
-                    suggested
-                  )}
-                  {rulesMode ? ' The written NASA rules are active until you switch.' : ''}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setAiModelTier(suggested);
-                  setPrepareNotice('');
-                }}
-                className="flex h-9 items-center rounded-lg border border-signal/30 bg-signal/[0.08] px-3 text-[12px] font-medium text-signal-strong transition-colors hover:bg-signal/[0.14]"
-              >
-                Use {modelName(suggested)}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSuggestionDismissed(true)}
-                className="flex h-9 items-center rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12px] font-medium text-ink-400 transition-colors hover:border-white/15 hover:text-ink-200"
-              >
-                Not now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {modelMissingModel && (
-        <div className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-3">
-          <p className="text-[12px] leading-5 text-ink-400">
-            This browser cannot run the on-device model. Doctor mode still uses the written NASA rules, and you can
-            point the assistant at a local Ollama server instead.
-          </p>
-          <button
-            type="button"
-            onClick={() => void runHardwareDiagnostic()}
-            className="mt-2 flex h-9 items-center rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
-          >
-            Check again
-          </button>
-        </div>
-      )}
-
-      {preparing && (
-        <div className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[12px] font-medium text-caution">Downloading {tierName} for the first time</p>
-            <div className="flex items-center gap-2">
-              <p className="font-mono text-[11.5px] text-ink-500">{Math.round(prepareProgress * 100)}%</p>
-              <button
-                type="button"
-                onClick={cancelPreparation}
-                className="flex items-center gap-1 rounded-md border border-caution/30 px-2 py-1 text-[11.5px] font-medium text-caution transition-colors hover:bg-caution/[0.08]"
-              >
-                <X className="h-3 w-3" strokeWidth={1.8} />
-                Cancel
-              </button>
-            </div>
-          </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-space-800">
-            <div
-              className="h-full rounded-full bg-caution transition-[width] duration-300"
-              style={{ width: `${Math.max(3, Math.round(prepareProgress * 100))}%` }}
-            />
-          </div>
-          <p className="mt-1.5 truncate text-[11.5px] text-ink-500">{prepareText}</p>
-        </div>
-      )}
-
-      {prepareError && !preparing && (
-        <p className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-2.5 text-[12px] leading-5 text-caution">
-          {prepareError}
+      {provider === 'ollama' && ollamaStatus === 'error' && !showServer && (
+        <p className="text-[11.5px] leading-5 text-caution">
+          {ollamaMessage || 'The Ollama server could not be reached.'}
         </p>
-      )}
-
-      {prepareNotice && !preparing && !prepareError && (
-        <p className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-2.5 text-[12px] leading-5 text-ink-400">
-          {prepareNotice}
-        </p>
-      )}
-
-      {doctorMode && (
-        <div className="flex flex-wrap gap-2">
-          {QUICK_SYMPTOMS.map((symptom) => {
-            const Icon = symptom.icon;
-            return (
-              <button
-                key={symptom.id}
-                type="button"
-                disabled={busy || preparing}
-                onClick={() => onQuickSymptom(symptom.id)}
-                className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12.5px] text-ink-300 transition-colors hover:border-white/15 hover:bg-space-850 hover:text-ink-100 disabled:opacity-40"
-              >
-                <Icon className="h-4 w-4 text-ink-500" strokeWidth={1.5} />
-                {symptom.label}
-              </button>
-            );
-          })}
-        </div>
       )}
 
       <div
         ref={scrollRef}
         className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-white/[0.08] bg-space-900 p-3 sm:p-4"
       >
+        {provider === 'ollama' && showServer && (
+          <div className="rounded-lg border border-white/[0.08] bg-space-950 p-3">
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <label className="block">
+                <span className="text-[11px] font-medium text-ink-300">Ollama server</span>
+                <input
+                  value={ollama.url}
+                  onChange={(event) => setOllama((current) => ({ ...current, url: event.target.value }))}
+                  placeholder="http://localhost:11434"
+                  className="mt-1 h-9 w-full rounded-lg border border-white/[0.08] bg-space-950 px-2.5 font-mono text-[12px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] font-medium text-ink-300">Model</span>
+                <input
+                  value={ollama.model}
+                  list="ollama-models"
+                  onChange={(event) => setOllama((current) => ({ ...current, model: event.target.value }))}
+                  placeholder="phi3"
+                  className="mt-1 h-9 w-full rounded-lg border border-white/[0.08] bg-space-950 px-2.5 font-mono text-[12px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
+                />
+                <datalist id="ollama-models">
+                  {ollamaModels.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
+              </label>
+              <button
+                type="button"
+                onClick={() => void checkOllama()}
+                disabled={ollamaStatus === 'checking'}
+                className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15 disabled:opacity-50"
+              >
+                {ollamaStatus === 'checking' ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.8} />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.6} />
+                )}
+                Check
+              </button>
+            </div>
+            {ollamaMessage && (
+              <p
+                className={`mt-2 text-[11.5px] leading-5 ${
+                  ollamaStatus === 'error' ? 'text-caution' : 'text-ink-400'
+                }`}
+              >
+                {ollamaMessage}
+              </p>
+            )}
+          </div>
+        )}
+
+        {doctorMode && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2 text-[12px] text-ink-400">
+            <span className="flex items-center gap-1.5 text-ink-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-positive" />
+              Live readings
+            </span>
+            <span className="font-mono tabular-nums">HR {vitals.heartRate} BPM</span>
+            <span className="font-mono tabular-nums">SpO2 {vitals.spO2}%</span>
+            <span className="font-mono tabular-nums">Temp {vitals.bodyTemp.toFixed(1)}°C</span>
+            <span className="font-mono tabular-nums">GSR {vitals.gsrStress.toFixed(1)} μS</span>
+            <span className="font-mono tabular-nums">Rad {vitals.radiationDoseRate.toFixed(2)} mSv/hr</span>
+            <span className="text-ink-400">
+              {vitals.source === 'sensor' ? 'From the sensor' : 'Practice readings'}
+            </span>
+          </div>
+        )}
+
+        {showSuggestion && (
+          <div className="rounded-lg border border-signal/25 bg-signal/[0.04] px-4 py-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <Cpu className="mt-0.5 h-4 w-4 shrink-0 text-signal-strong" strokeWidth={1.5} />
+                <div>
+                  <p className="text-[14px] font-medium text-ink-100">
+                    {rulesMode
+                      ? 'This device can run an on-device assistant'
+                      : `Suggested for this device: ${modelName(suggested)}`}
+                  </p>
+                  <p className="mt-1 max-w-xl text-[13px] leading-5 text-ink-400">
+                    {recommendationReason(
+                      diagnostic.estimatedRamGb,
+                      diagnostic.webGpu,
+                      diagnostic.gpuTier,
+                      suggested
+                    )}
+                    {rulesMode ? ' The written NASA rules are active until you switch.' : ''}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiModelTier(suggested);
+                    setPrepareNotice('');
+                  }}
+                  className="flex h-9 items-center rounded-lg border border-signal/30 bg-signal/[0.08] px-3 text-[12px] font-medium text-signal-strong transition-colors hover:bg-signal/[0.14]"
+                >
+                  Use {modelName(suggested)}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSuggestionDismissed(true)}
+                  className="flex h-9 items-center rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12px] font-medium text-ink-400 transition-colors hover:border-white/15 hover:text-ink-200"
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {modelMissingModel && (
+          <div className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-3">
+            <p className="text-[12px] leading-5 text-ink-400">
+              This browser cannot run the on-device model. Doctor mode still uses the written NASA rules, and you can
+              point the assistant at a local Ollama server instead.
+            </p>
+            <button
+              type="button"
+              onClick={() => void runHardwareDiagnostic()}
+              className="mt-2 flex h-9 items-center rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
+            >
+              Check again
+            </button>
+          </div>
+        )}
+
+        {preparing && (
+          <div className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[12px] font-medium text-caution">Downloading {tierName} for the first time</p>
+              <div className="flex items-center gap-2">
+                <p className="font-mono text-[11.5px] text-ink-500">{Math.round(prepareProgress * 100)}%</p>
+                <button
+                  type="button"
+                  onClick={cancelPreparation}
+                  className="flex items-center gap-1 rounded-md border border-caution/30 px-2 py-1 text-[11.5px] font-medium text-caution transition-colors hover:bg-caution/[0.08]"
+                >
+                  <X className="h-3 w-3" strokeWidth={1.8} />
+                  Cancel
+                </button>
+              </div>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-space-800">
+              <div
+                className="h-full rounded-full bg-caution transition-[width] duration-300"
+                style={{ width: `${Math.max(3, Math.round(prepareProgress * 100))}%` }}
+              />
+            </div>
+            <p className="mt-1.5 truncate text-[11.5px] text-ink-500">{prepareText}</p>
+          </div>
+        )}
+
+        {prepareError && !preparing && (
+          <p className="rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-2.5 text-[12px] leading-5 text-caution">
+            {prepareError}
+          </p>
+        )}
+
+        {prepareNotice && !preparing && !prepareError && (
+          <p className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-2.5 text-[12px] leading-5 text-ink-400">
+            {prepareNotice}
+          </p>
+        )}
+
+        {doctorMode && (
+          <div className="flex flex-wrap gap-2">
+            {QUICK_SYMPTOMS.map((symptom) => {
+              const Icon = symptom.icon;
+              return (
+                <button
+                  key={symptom.id}
+                  type="button"
+                  disabled={busy || preparing}
+                  onClick={() => onQuickSymptom(symptom.id)}
+                  className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12.5px] text-ink-300 transition-colors hover:border-white/15 hover:bg-space-850 hover:text-ink-100 disabled:opacity-40"
+                >
+                  <Icon className="h-4 w-4 text-ink-500" strokeWidth={1.5} />
+                  {symptom.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {messages.map((message) => {
           const crimson = message.actionCard?.color === 'crimson';
           const isUser = message.sender === 'astronaut';
