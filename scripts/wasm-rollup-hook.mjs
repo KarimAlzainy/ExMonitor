@@ -1,3 +1,4 @@
+// Rollup WASM hook. Written with AI assistance; reviewed by the author.
 let useWasm = false;
 
 export function initialize(data) {

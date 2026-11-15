@@ -17,6 +17,9 @@ import { fileURLToPath } from 'node:url';
  *   node server.js --relay-only    start only the relay for `npm run dev`
  *   node server.js --port 8080     choose a starting port
  *   node server.js --no-open       do not open a browser
+ *
+ * Built with AI assistance: most of this file was written in a pair-programming
+ * loop with an AI coding agent and reviewed by the author.
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url));

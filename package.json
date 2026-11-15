@@ -2,6 +2,7 @@
   "name": "exmonitor",
   "private": true,
   "version": "1.0.0",
+  "description": "Offline-first crew health console for a training simulation: pretend sensor page, crew alerts and an on-device assistant. Built with AI assistance.",
   "type": "module",
   "scripts": {
     "dev": "node --import ./scripts/register-wasm-rollup.mjs ./node_modules/vite/bin/vite.js --host",

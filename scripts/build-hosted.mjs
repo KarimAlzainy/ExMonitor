@@ -1,3 +1,4 @@
+// Build the hosted /app/ copy. Written with AI assistance; reviewed by the author.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

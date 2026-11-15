@@ -1,3 +1,4 @@
+// Package the downloadable ZIPs. Written with AI assistance; reviewed by the author.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

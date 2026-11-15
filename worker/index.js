@@ -1,3 +1,6 @@
+// ExMonitor hosted Worker.
+// Built with AI assistance: written in a pair-programming loop with an AI
+// coding agent and reviewed by the author.
 import { RelayRoom } from './relayRoom.js';
 
 export { RelayRoom };

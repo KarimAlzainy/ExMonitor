@@ -1,3 +1,4 @@
+// Register the WASM rollup fallback. Written with AI assistance; reviewed by the author.
 import { createRequire, register, registerHooks } from 'node:module';
 
 const require = createRequire(import.meta.url);

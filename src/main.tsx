@@ -1,3 +1,6 @@
+// ExMonitor console entry point.
+// Built with AI assistance: most of this codebase was written in a
+// pair-programming loop with an AI coding agent and reviewed by the author.
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
