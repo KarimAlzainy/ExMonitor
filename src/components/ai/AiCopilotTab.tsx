@@ -540,7 +540,7 @@ export const AiCopilotTab: React.FC = () => {
           <button
             type="button"
             onClick={() => void downloadNow()}
-            className="ml-auto flex h-8 items-center rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
+            className="ml-auto flex h-9 items-center rounded-lg bg-chalk px-3.5 text-[12.5px] font-medium text-space-950 transition-colors hover:brightness-105"
           >
             Download now
           </button>
@@ -565,7 +565,7 @@ export const AiCopilotTab: React.FC = () => {
 
       <div
         ref={scrollRef}
-        className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-white/[0.08] bg-space-900 p-3 sm:p-4"
+        className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto glass rounded-2xl p-3 sm:p-4"
       >
         {provider === 'ollama' && showServer && (
           <div className="rounded-lg border border-white/[0.08] bg-space-950 p-3">
@@ -683,7 +683,7 @@ export const AiCopilotTab: React.FC = () => {
         )}
 
         {modelMissingModel && (
-          <div className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-3">
+          <div className="glass rounded-xl px-4 py-3">
             <p className="text-[12px] leading-5 text-ink-400">
               This browser cannot run the on-device model. Doctor mode still uses the written NASA rules, and you can
               point the assistant at a local Ollama server instead.
@@ -731,7 +731,7 @@ export const AiCopilotTab: React.FC = () => {
         )}
 
         {prepareNotice && !preparing && !prepareError && (
-          <p className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-2.5 text-[12px] leading-5 text-ink-400">
+          <p className="glass rounded-xl px-4 py-2.5 text-[12px] leading-5 text-ink-400">
             {prepareNotice}
           </p>
         )}
@@ -838,7 +838,7 @@ export const AiCopilotTab: React.FC = () => {
       </div>
 
       <form
-        className="flex shrink-0 items-center gap-2 rounded-xl border border-white/[0.08] bg-space-900 p-2 pl-3"
+        className="flex shrink-0 items-center gap-2 glass rounded-2xl p-2 pl-3"
         onSubmit={(event) => {
           event.preventDefault();
           void ask(draft);

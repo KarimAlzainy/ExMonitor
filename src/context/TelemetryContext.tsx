@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import {
   AiModelTier,
   CrewProfile,
+  DemoOverlayEvent,
+  DemoState,
   EmergencyEvent,
   OwnAlert,
   PeerNode,
@@ -17,6 +19,8 @@ import { showAlertNotification } from '../services/notifications';
 import { loadBundleModel, resolveInitialTier, storeTier } from '../services/aiModels';
 import { assessDevice } from '../services/deviceCheck';
 import { saveProfile } from '../services/profileStore';
+import { DEMO_SENSOR_ID, DEMO_STEPS, DEMO_STEP_COUNT } from '../services/demoRunner';
+import { SensorEngine } from '../sensors/sensorEngine';
 
 interface TelemetryContextType {
   vitals: VitalsData;
@@ -44,9 +48,48 @@ interface TelemetryContextType {
   sensorStatus: SensorStatus;
   sensorFrame: SensorFrame | null;
   sensorId: string | null;
+  demo: DemoState;
+  startDemo: () => void;
+  pauseDemo: () => void;
+  resumeDemo: () => void;
+  stopDemo: () => void;
+  demoOverlay: DemoOverlayEvent | null;
+  dismissDemoOverlay: () => void;
+  adoptedSensorId: string | null;
 }
 
 const TelemetryContext = createContext<TelemetryContextType | null>(null);
+
+const INITIAL_DEMO: DemoState = {
+  running: false,
+  paused: false,
+  stepIndex: 0,
+  stepCount: DEMO_STEP_COUNT,
+  label: '',
+  note: '',
+  progress: 0
+};
+
+const DEMO_TICK_MS = 125;
+
+/**
+ * Clear the sender's own alert completely, even while it is still flagged as
+ * sending. `dismissOwnAlert` alone refuses during that window, which would
+ * strand an alert panel.
+ */
+function vitalsFromFrame(frame: SensorFrame): VitalsData {
+  return {
+    heartRate: frame.heartRate,
+    spO2: frame.spO2,
+    bodyTemp: frame.bodyTemp,
+    gsrStress: frame.gsrStress,
+    radiationDoseRate: frame.radiationDoseRate,
+    cumulativeRadiation: frame.cumulativeRadiation,
+    timestamp: frame.sentAt,
+    signalQuality: frame.signalQuality,
+    source: 'sensor'
+  };
+}
 
 const INITIAL_VITALS: VitalsData = {
   heartRate: 72,
@@ -86,6 +129,9 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     webGpu: false,
     recommendedModel: 'none'
   });
+  const [demo, setDemo] = useState<DemoState>(INITIAL_DEMO);
+  const [demoOverlay, setDemoOverlay] = useState<DemoOverlayEvent | null>(null);
+  const [adoptedSensorId, setAdoptedSensorId] = useState<string | null>(null);
 
   const profileRef = useRef(profile);
   const vitalsRef = useRef(vitals);
@@ -99,6 +145,17 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   const sentTimerRef = useRef<number | null>(null);
   const builtinRef = useRef({ heartRate: 72, spO2: 98, bodyTemp: 36.8, gsrStress: 4.1, radiationDoseRate: 0.04 });
   const announceTimerRef = useRef<number | null>(null);
+  const lastAdoptAtRef = useRef(0);
+  const demoActiveRef = useRef(false);
+  const demoPausedRef = useRef(false);
+  const demoTickRef = useRef<number | null>(null);
+  const demoEngineRef = useRef<SensorEngine | null>(null);
+  const demoStepRef = useRef(0);
+  const demoStepStartedAtRef = useRef(0);
+  const demoAlertFiredRef = useRef(false);
+  const demoOverlayShownRef = useRef(false);
+  const demoPreSettledRef = useRef(false);
+  const demoPausedAtRef = useRef(0);
 
   profileRef.current = profile;
   vitalsRef.current = vitals;
@@ -142,6 +199,29 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     },
     [updateProfile]
   );
+
+  /**
+   * Single entry point for sensor data. The relay listener keeps its
+   * `sensorId === paired` guard; the demo bypasses it and owns the stream
+   * while it runs.
+   */
+  const applySensorFrame = useCallback((frame: SensorFrame, origin: 'relay' | 'demo') => {
+    if (origin === 'demo' && !demoActiveRef.current) return;
+    if (origin === 'relay') {
+      const active = profileRef.current.sensorId;
+      if (!active || frame.sensorId !== active) return;
+      // The demo is exclusive while it runs.
+      if (demoActiveRef.current) return;
+      const gap = Date.now() - lastSensorFrameAtRef.current;
+      if (frame.seq <= lastSensorSeqRef.current && gap < 2500) return;
+    }
+
+    lastSensorSeqRef.current = frame.seq;
+    lastSensorFrameAtRef.current = Date.now();
+    setSensorStatus('connected');
+    setSensorFrame(frame);
+    setVitals(vitalsFromFrame(frame));
+  }, []);
 
   const runHardwareDiagnostic = useCallback(async (): Promise<SystemDiagnostic> => {
     const next = await assessDevice();
@@ -242,35 +322,25 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
       }
 
       if (message.type === 'SENSOR_HELLO') {
+        const { sensorId } = message.payload;
         const active = profileRef.current.sensorId;
-        if (active && message.payload.sensorId === active) {
-          crewLink.pairSensor(active, profileRef.current.name);
+        if (active) {
+          if (sensorId === active) crewLink.pairSensor(active, profileRef.current.name);
+          return;
         }
+        // Nothing is paired yet: adopt the sensor that announced itself, so
+        // choosing a situation on the sensor page drives this console without
+        // a manual scan. The demo owns the stream while it runs.
+        if (demoActiveRef.current) return;
+        if (Date.now() - lastAdoptAtRef.current < 10000) return;
+        lastAdoptAtRef.current = Date.now();
+        setAdoptedSensorId(sensorId);
+        connectSensor(sensorId);
         return;
       }
 
       if (message.type === 'SENSOR_FRAME') {
-        const frame = message.payload;
-        const active = profileRef.current.sensorId;
-        if (!frame || !active || frame.sensorId !== active) return;
-        const gap = Date.now() - lastSensorFrameAtRef.current;
-        if (frame.seq <= lastSensorSeqRef.current && gap < 2500) return;
-
-        lastSensorSeqRef.current = frame.seq;
-        lastSensorFrameAtRef.current = Date.now();
-        setSensorStatus('connected');
-        setSensorFrame(frame);
-        setVitals({
-          heartRate: frame.heartRate,
-          spO2: frame.spO2,
-          bodyTemp: frame.bodyTemp,
-          gsrStress: frame.gsrStress,
-          radiationDoseRate: frame.radiationDoseRate,
-          cumulativeRadiation: frame.cumulativeRadiation,
-          timestamp: frame.sentAt,
-          signalQuality: frame.signalQuality,
-          source: 'sensor'
-        });
+        applySensorFrame(message.payload, 'relay');
       }
     });
 
@@ -287,6 +357,8 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   // Sensor staleness and the automatic fallback generator.
   useEffect(() => {
     const timer = window.setInterval(() => {
+      // The demo owns the stream while it runs.
+      if (demoActiveRef.current) return;
       const active = profileRef.current.sensorId;
       if (!active) {
         if (sensorStatusRef.current !== 'off') setSensorStatus('off');
@@ -305,6 +377,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
 
   useEffect(() => {
     const timer = window.setInterval(() => {
+      if (demoActiveRef.current) return;
       if (sensorStatusRef.current === 'connected') return;
 
       const base = builtinRef.current;
@@ -418,6 +491,192 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     setOwnAlert(null);
   }, []);
 
+  /**
+   * Stop the demo and hand the console back to live readings. This is total:
+   * alert, overlay, vitals and sensor status all return to a clean state.
+   */
+  const stopDemo = useCallback(() => {
+    const wasActive = demoActiveRef.current;
+    if (demoTickRef.current !== null) {
+      window.clearInterval(demoTickRef.current);
+      demoTickRef.current = null;
+    }
+    demoActiveRef.current = false;
+    demoPausedRef.current = false;
+    demoPausedAtRef.current = 0;
+    demoEngineRef.current = null;
+    demoStepRef.current = 0;
+    demoStepStartedAtRef.current = 0;
+    demoAlertFiredRef.current = false;
+    demoOverlayShownRef.current = false;
+    demoPreSettledRef.current = false;
+    setDemo(INITIAL_DEMO);
+    setDemoOverlay(null);
+    if (!wasActive) return;
+
+    cancelOwnAlert();
+    setOwnAlert(null);
+    setSensorFrame(null);
+    lastSensorFrameAtRef.current = 0;
+    lastSensorSeqRef.current = 0;
+    setSensorStatus(profileRef.current.sensorId ? 'waiting' : 'off');
+    setVitals({ ...INITIAL_VITALS, timestamp: Date.now() });
+  }, [cancelOwnAlert]);
+
+  const startDemo = useCallback(() => {
+    if (demoActiveRef.current) return;
+
+    const engine = new SensorEngine(DEMO_SENSOR_ID);
+    engine.setScenario(DEMO_STEPS[0].scenario);
+    // Settle to the baseline so the first frames already look natural.
+    engine.step(6);
+
+    demoEngineRef.current = engine;
+    demoActiveRef.current = true;
+    demoPausedRef.current = false;
+    demoPausedAtRef.current = 0;
+    demoStepRef.current = 0;
+    demoStepStartedAtRef.current = Date.now();
+    demoAlertFiredRef.current = false;
+    demoOverlayShownRef.current = false;
+    demoPreSettledRef.current = false;
+
+    lastSensorFrameAtRef.current = Date.now();
+    lastSensorSeqRef.current = 0;
+    setSensorStatus('connected');
+    setDemoOverlay(null);
+    setDemo({
+      running: true,
+      paused: false,
+      stepIndex: 0,
+      stepCount: DEMO_STEP_COUNT,
+      label: DEMO_STEPS[0].label,
+      note: DEMO_STEPS[0].note,
+      progress: 0
+    });
+
+    let ecgRemainder = 0;
+    let ppgRemainder = 0;
+
+    const tick = () => {
+      if (!demoActiveRef.current || demoPausedRef.current) return;
+      const current = demoEngineRef.current;
+      const step = DEMO_STEPS[demoStepRef.current];
+      if (!current || !step) {
+        stopDemo();
+        return;
+      }
+
+      const now = Date.now();
+      current.setScenario(step.scenario);
+
+      // The last step snaps back to the rest profile, so the demo lands on
+      // nominal instead of trailing a slowly-decaying radiation dose.
+      if (demoStepRef.current === DEMO_STEP_COUNT - 1 && !demoPreSettledRef.current) {
+        demoPreSettledRef.current = true;
+        current.step(45);
+        demoStepStartedAtRef.current = now;
+      }
+
+      const dt = DEMO_TICK_MS / 1000;
+      current.step(dt);
+
+      ecgRemainder += 250 * dt;
+      const ecgCount = Math.round(ecgRemainder);
+      ecgRemainder -= ecgCount;
+      ppgRemainder += 50 * dt;
+      const ppgCount = Math.round(ppgRemainder);
+      ppgRemainder -= ppgCount;
+
+      const ecg: number[] = [];
+      for (let index = 0; index < ecgCount; index += 1) ecg.push(current.ecgSample());
+      const ppg: number[] = [];
+      for (let index = 0; index < ppgCount; index += 1) ppg.push(current.ppgSample());
+
+      const frame = current.buildFrame(ecg, ppg);
+      applySensorFrame(frame, 'demo');
+
+      // The receiver-style overlay, shown once, at the first real breach.
+      if (step.critical && !demoAlertFiredRef.current) {
+        const rule = evaluateBiometrics(vitalsFromFrame(frame));
+        if (rule.isTriggerEmergency) {
+          demoAlertFiredRef.current = true;
+          if (!demoOverlayShownRef.current) {
+            demoOverlayShownRef.current = true;
+            setDemoOverlay({
+              title: rule.hazardTitle,
+              description: rule.hazardDescription,
+              protocol: rule.nasaRef,
+              stepLabel: step.label
+            });
+          }
+        }
+      }
+
+      const elapsed = (now - demoStepStartedAtRef.current) / 1000;
+
+      if (elapsed >= step.seconds) {
+        const nextIndex = demoStepRef.current + 1;
+        if (nextIndex >= DEMO_STEP_COUNT) {
+          stopDemo();
+          return;
+        }
+        // Leave a critical step with a clean slate so the next critical step
+        // can raise a fresh alert.
+        if (step.critical) {
+          cancelOwnAlert();
+          setOwnAlert(null);
+          demoAlertFiredRef.current = false;
+        }
+        demoStepRef.current = nextIndex;
+        demoStepStartedAtRef.current = now;
+        setDemo({
+          running: true,
+          paused: false,
+          stepIndex: nextIndex,
+          stepCount: DEMO_STEP_COUNT,
+          label: DEMO_STEPS[nextIndex].label,
+          note: DEMO_STEPS[nextIndex].note,
+          progress: 0
+        });
+        return;
+      }
+
+      setDemo({
+        running: true,
+        paused: false,
+        stepIndex: demoStepRef.current,
+        stepCount: DEMO_STEP_COUNT,
+        label: step.label,
+        note: step.note,
+        progress: Math.min(1, elapsed / step.seconds)
+      });
+    };
+
+    demoTickRef.current = window.setInterval(tick, DEMO_TICK_MS);
+    tick();
+  }, [applySensorFrame, cancelOwnAlert, stopDemo]);
+
+  const pauseDemo = useCallback(() => {
+    if (!demoActiveRef.current || demoPausedRef.current) return;
+    demoPausedRef.current = true;
+    demoPausedAtRef.current = Date.now();
+    setDemo((previous) => ({ ...previous, paused: true }));
+  }, []);
+
+  const resumeDemo = useCallback(() => {
+    if (!demoActiveRef.current || !demoPausedRef.current) return;
+    const pausedFor = Date.now() - demoPausedAtRef.current;
+    demoStepStartedAtRef.current += pausedFor;
+    demoPausedAtRef.current = 0;
+    demoPausedRef.current = false;
+    setDemo((previous) => ({ ...previous, paused: false }));
+  }, []);
+
+  const dismissDemoOverlay = useCallback(() => {
+    setDemoOverlay(null);
+  }, []);
+
   useEffect(() => {
     if (!ruleResult.isTriggerEmergency) {
       autoSosRef.current = false;
@@ -431,6 +690,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   useEffect(() => {
     return () => {
       if (sentTimerRef.current !== null) window.clearTimeout(sentTimerRef.current);
+      if (demoTickRef.current !== null) window.clearInterval(demoTickRef.current);
     };
   }, []);
 
@@ -470,7 +730,15 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     peers,
     sensorStatus,
     sensorFrame,
-    sensorId: profile.sensorId
+    sensorId: profile.sensorId,
+    demo,
+    startDemo,
+    pauseDemo,
+    resumeDemo,
+    stopDemo,
+    demoOverlay,
+    dismissDemoOverlay,
+    adoptedSensorId
   };
 
   return <TelemetryContext.Provider value={value}>{children}</TelemetryContext.Provider>;

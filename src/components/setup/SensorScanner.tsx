@@ -157,7 +157,7 @@ export const SensorScanner: React.FC<SensorScannerProps> = ({ open, onClose, onC
         role="dialog"
         aria-modal="true"
         aria-label="Scan the sensor code"
-        className="w-full max-w-lg rounded-xl border border-white/[0.08] bg-space-900 p-5"
+        className="w-full max-w-lg glass rounded-2xl p-5"
       >
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">

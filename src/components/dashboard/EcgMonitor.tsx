@@ -205,7 +205,7 @@ export const EcgMonitor: React.FC = () => {
   });
 
   return (
-    <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5 sm:p-6">
+    <section className="glass rounded-2xl p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">

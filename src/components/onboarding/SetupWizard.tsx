@@ -189,7 +189,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
                   title="Connect the sensor"
                   text="The sensor page turns a phone or another computer into the body sensors. Open it on that device, then scan its code here. If you skip this, the console uses gentle practice readings instead."
                 />
-                <div className="mt-6 rounded-xl border border-white/[0.08] bg-space-900 p-5">
+                <div className="mt-6 glass rounded-2xl p-5">
                   {sensorId ? (
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -267,7 +267,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
                   title="Tell the crew who you are"
                   text="This name and label appear on your readings and on any alert you send. Both stay on this device."
                 />
-                <div className="mt-6 rounded-xl border border-white/[0.08] bg-space-900 p-5">
+                <div className="mt-6 glass rounded-2xl p-5">
                   <label className="block text-[13px] font-medium text-ink-200" htmlFor="setup-name">
                     Your name
                   </label>
@@ -328,7 +328,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
                   text="When another crew device sends an emergency alert, this device can show a system notification as well as the full-screen alert. Browsers only deliver it while ExMonitor is open or installed."
                 />
                 <div className="mt-6 space-y-3">
-                  <div className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+                  <div className="glass rounded-2xl p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-space-850 text-ink-300">
@@ -377,7 +377,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
                     )}
                   </div>
 
-                  <div className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+                  <div className="glass rounded-2xl p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-space-850 text-ink-300">
@@ -432,7 +432,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
                   text="The assistant runs on this device. We checked the memory and graphics to suggest a model that should fit. You can change it later from Settings."
                 />
                 <div className="mt-6 space-y-3">
-                  <div className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+                  <div className="glass rounded-2xl p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-[13px] font-medium text-ink-100">This device</p>
                       {checkingDevice ? (
@@ -550,7 +550,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
                   title="The console is ready"
                   text="These details are saved on this device. You can change them later from the Setup section."
                 />
-                <div className="mt-6 rounded-xl border border-white/[0.08] bg-space-900 p-5">
+                <div className="mt-6 glass rounded-2xl p-5">
                   <dl className="divide-y divide-white/[0.06]">
                     <SummaryRow label="Name" value={name} />
                     <SummaryRow label="Label" value={label} />

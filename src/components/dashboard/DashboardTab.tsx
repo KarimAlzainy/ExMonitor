@@ -1,35 +1,17 @@
 import React from 'react';
 import { AlertOctagon, Radio } from 'lucide-react';
-import { AlertSeverity } from '../../types/telemetry';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { EcgMonitor } from './EcgMonitor';
 import { VitalCard } from './VitalCard';
 import { RadiationHazardBadge } from './RadiationHazardBadge';
+import { DemoPanel } from './DemoPanel';
 import { InfoTip } from '../ui/InfoTip';
-
-function heartRateSeverity(heartRate: number): AlertSeverity {
-  if (heartRate > 155 || heartRate < 42) return 'critical';
-  if (heartRate > 125) return 'caution';
-  return 'nominal';
-}
-
-function oxygenSeverity(spO2: number): AlertSeverity {
-  if (spO2 < 88) return 'critical';
-  if (spO2 < 93) return 'caution';
-  return 'nominal';
-}
-
-function temperatureSeverity(bodyTemp: number): AlertSeverity {
-  if (bodyTemp >= 38.8) return 'critical';
-  if (bodyTemp >= 37.8) return 'caution';
-  return 'nominal';
-}
-
-function stressSeverity(gsrStress: number): AlertSeverity {
-  if (gsrStress >= 22) return 'critical';
-  if (gsrStress >= 12) return 'caution';
-  return 'nominal';
-}
+import {
+  heartRateSeverity,
+  oxygenSeverity,
+  stressSeverity,
+  temperatureSeverity
+} from '../../services/severity';
 
 export const DashboardTab: React.FC = () => {
   const {
@@ -38,7 +20,8 @@ export const DashboardTab: React.FC = () => {
     triggerEmergencySOS,
     ownAlert,
     sensorStatus,
-    sensorId
+    sensorId,
+    adoptedSensorId
   } = useTelemetry();
 
   const statusTone =
@@ -73,8 +56,27 @@ export const DashboardTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <DemoPanel />
+
+      {adoptedSensorId && adoptedSensorId === sensorId && (
+        <div className="glass flex flex-wrap items-center justify-between gap-3 rounded-2xl border-signal/30 px-4 py-3">
+          <p className="flex items-center gap-2 text-[13px] leading-5 text-ink-200">
+            <Radio className="h-4 w-4 shrink-0 text-signal-strong" strokeWidth={1.6} />
+            A sensor announced itself, so this console paired with it automatically.
+            <span className="font-mono text-[11.5px] text-ink-500">{adoptedSensorId}</span>
+          </p>
+          <a
+            href="#settings"
+            onClick={(event) => event.preventDefault()}
+            className="text-[13px] font-medium text-signal-strong hover:text-ink-100"
+          >
+            Manage in Settings
+          </a>
+        </div>
+      )}
+
       {sensorNotice && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-3">
+        <div className="glass-tint-caution flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3">
           <p className="flex items-center gap-2 text-[13px] leading-5 text-ink-200">
             <Radio className="h-4 w-4 shrink-0 text-caution" strokeWidth={1.6} />
             {sensorNotice}
@@ -91,12 +93,10 @@ export const DashboardTab: React.FC = () => {
         </div>
       )}
 
-      <EcgMonitor />
-
-      <section className={`rounded-xl border p-5 ${statusTone.border} ${statusTone.surface}`}>
+      <section className={`glass-tint-${ruleResult.statusColor === 'red' ? 'critical' : ruleResult.statusColor === 'yellow' ? 'caution' : 'none'} rounded-2xl p-5 sm:p-6`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
-            <span className={`h-2 w-2 rounded-full ${statusTone.dot}`} />
+          <p className="flex items-center gap-2.5 text-[20px] font-medium leading-6 text-ink-100">
+            <span className={`h-2.5 w-2.5 rounded-full ${statusTone.dot}`} />
             <span className={statusTone.title}>{ruleResult.hazardTitle}</span>
           </p>
           <span className="flex items-center gap-1 font-mono text-[12px] text-ink-400">
@@ -104,10 +104,10 @@ export const DashboardTab: React.FC = () => {
             <InfoTip text="The NASA reference or flight rule behind this status." label="NASA reference" />
           </span>
         </div>
-        <p className="mt-3 max-w-3xl text-[14px] leading-6 text-ink-300">{ruleResult.hazardDescription}</p>
-        <div className="mt-3 max-w-3xl border-l-2 border-chalk/40 pl-3">
-          <p className="text-[12px] font-medium text-ink-400">What to do</p>
-          <p className="mt-1 text-[14px] leading-6 text-ink-100">{ruleResult.recommendedAction}</p>
+        <p className="mt-3 max-w-3xl text-[15px] leading-6 text-ink-300">{ruleResult.hazardDescription}</p>
+        <div className="mt-4 max-w-3xl rounded-lg bg-chalk px-4 py-3.5">
+          <p className="text-[12px] font-medium text-space-600">What to do now</p>
+          <p className="mt-1 text-[15px] font-medium leading-6 text-space-950">{ruleResult.recommendedAction}</p>
         </div>
         {vitals.source === 'builtin' && (
           <p className="mt-3 text-[12px] text-ink-400">These are practice readings, not a real body sensor.</p>
@@ -157,7 +157,9 @@ export const DashboardTab: React.FC = () => {
         <RadiationHazardBadge />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-critical/30 bg-critical/[0.04] p-4 sm:p-5">
+      <EcgMonitor />
+
+      <div className="glass-tint-critical flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <AlertOctagon className="mt-0.5 h-5 w-5 shrink-0 text-critical" strokeWidth={1.5} />
           <div>

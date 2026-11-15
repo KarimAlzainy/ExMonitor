@@ -2,27 +2,30 @@ import React from 'react';
 import { Radiation } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { InfoTip } from '../ui/InfoTip';
+import { radiationSeverity, severityTone } from '../../services/severity';
 
 export const RadiationHazardBadge: React.FC = () => {
   const { vitals } = useTelemetry();
   const { radiationDoseRate, cumulativeRadiation } = vitals;
 
-  const isCritical = radiationDoseRate >= 1.0;
-  const isCaution = radiationDoseRate >= 0.3 && !isCritical;
+  const severity = radiationSeverity(radiationDoseRate);
+  const tone = severityTone(severity);
+  const isCritical = severity === 'critical';
+  const isCaution = severity === 'caution';
 
   const dosePercent = Math.min(100, (radiationDoseRate / 1.0) * 100);
   const cumulativePercent = Math.min(100, (cumulativeRadiation / 25) * 100);
 
-  const tone = isCritical
-    ? { dot: 'bg-critical', text: 'text-critical', bar: 'bg-critical' }
-    : isCaution
-      ? { dot: 'bg-caution', text: 'text-caution', bar: 'bg-caution' }
-      : { dot: 'bg-positive', text: 'text-positive', bar: 'bg-positive' };
+  const bar = isCritical ? 'bg-critical' : isCaution ? 'bg-caution' : 'bg-positive';
 
   const statusLabel = isCritical ? 'Above the limit' : isCaution ? 'Raised' : 'Normal';
 
   return (
-    <section className="flex h-full flex-col rounded-xl border border-white/[0.08] bg-space-900 p-5">
+    <section
+      className={`flex h-full flex-col rounded-2xl p-5 lift ${
+        isCritical ? 'glass-tint-critical' : isCaution ? 'glass-tint-caution' : 'glass'
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -60,7 +63,7 @@ export const RadiationHazardBadge: React.FC = () => {
           </div>
           <div className="relative mt-3 h-1.5 rounded-full bg-space-800">
             <div
-              className={`h-full rounded-full ${tone.bar}`}
+              className={`h-full rounded-full ${bar}`}
               style={{ width: `${Math.max(2, dosePercent)}%` }}
             />
             <span className="absolute left-[30%] top-1/2 h-2.5 w-px -translate-y-1/2 bg-white/15" />

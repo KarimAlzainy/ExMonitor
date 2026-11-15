@@ -16,9 +16,18 @@ import {
   Signal,
   Wind
 } from 'lucide-react';
-import { SensorFrame, SensorScenario } from '../types/telemetry';
+import { AlertSeverity, SensorFrame, SensorScenario } from '../types/telemetry';
 import { SCENARIO_LABELS, SensorEngine, createSensorId } from './sensorEngine';
 import { crewLink } from '../services/crewLink';
+import { evaluateBiometrics } from '../services/nasaRules';
+import {
+  heartRateSeverity,
+  oxygenSeverity,
+  radiationSeverity,
+  severityTone,
+  stressSeverity,
+  temperatureSeverity
+} from '../services/severity';
 
 const SENSOR_KEY = 'exmonitor.sensor.id';
 const SENSOR_PATTERN = /^SENSOR-[A-Z0-9]{4,12}$/;
@@ -286,6 +295,21 @@ export const SensorPage: React.FC = () => {
     link === 'relay' ? 'Relay connected' : link === 'local' ? 'This browser only' : 'Relay offline';
   const linkDot = link === 'relay' ? 'bg-positive' : link === 'local' ? 'bg-caution' : 'bg-ink-500';
 
+  const liveRule = live
+    ? evaluateBiometrics({
+        heartRate: live.heartRate,
+        spO2: live.spO2,
+        bodyTemp: live.bodyTemp,
+        gsrStress: live.gsrStress,
+        radiationDoseRate: live.radiationDoseRate,
+        cumulativeRadiation: live.cumulativeRadiation,
+        timestamp: live.sentAt,
+        signalQuality: live.signalQuality,
+        source: 'sensor'
+      })
+    : null;
+  const liveTone = liveRule ? severityTone(liveRule.severity) : severityTone('nominal');
+
   return (
     <div className="min-h-dvh bg-space-950 text-ink-100">
       <header className="border-b border-white/[0.08]">
@@ -317,7 +341,7 @@ export const SensorPage: React.FC = () => {
 
       <main className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-6 sm:px-6 lg:grid-cols-[340px_minmax(0,1fr)]">
         <div className="space-y-4">
-          <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+          <section className="glass rounded-2xl p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[13px] font-medium text-ink-200">Pairing code</p>
@@ -385,7 +409,7 @@ export const SensorPage: React.FC = () => {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+          <section className="glass rounded-2xl p-5">
             <p className="text-[13px] font-medium text-ink-200">How to connect</p>
             <ol className="mt-3 space-y-2.5">
               <Step number="1" text="Open the console on the other device on the same Wi-Fi or hotspot." />
@@ -400,7 +424,7 @@ export const SensorPage: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+          <section className="glass rounded-2xl p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h1 className="text-[16px] font-medium text-ink-100">Situation</h1>
@@ -442,7 +466,7 @@ export const SensorPage: React.FC = () => {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+          <section className="glass rounded-2xl p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
                 <HeartPulse className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
@@ -479,27 +503,74 @@ export const SensorPage: React.FC = () => {
             <p className="mt-1.5 text-[11.5px] text-ink-500">Pulse wave (PPG)</p>
           </section>
 
-          <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <Metric label="Heart rate" value={live ? String(live.heartRate) : '–'} unit="BPM" />
-            <Metric label="Blood oxygen" value={live ? String(live.spO2) : '–'} unit="%" />
-            <Metric label="Body temperature" value={live ? live.bodyTemp.toFixed(1) : '–'} unit="°C" />
-            <Metric label="Stress signal" value={live ? live.gsrStress.toFixed(1) : '–'} unit="µS" />
-            <Metric label="Radiation dose" value={live ? live.radiationDoseRate.toFixed(2) : '–'} unit="mSv/hr" />
-            <Metric label="Total mission dose" value={live ? live.cumulativeRadiation.toFixed(2) : '–'} unit="mSv" />
-            <Metric label="Signal quality" value={live ? String(live.signalQuality) : '–'} unit="%" />
-            <div className="rounded-lg border border-white/[0.06] bg-space-900 px-4 py-3">
-              <p className="flex items-center gap-1.5 text-[11.5px] text-ink-500">
-                <Battery className="h-3.5 w-3.5" strokeWidth={1.6} />
-                Sensor battery
+          <div className="space-y-2">
+            <div
+              className={`flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-2.5 ${
+                liveRule
+                  ? liveRule.statusColor === 'red'
+                    ? 'glass-tint-critical'
+                    : liveRule.statusColor === 'yellow'
+                      ? 'glass-tint-caution'
+                      : 'glass'
+                  : 'glass'
+              }`}
+            >
+              <p className="flex items-center gap-2 text-[13px] font-medium text-ink-100">
+                <span className={`h-2 w-2 rounded-full ${liveTone.dot}`} />
+                {liveRule ? liveRule.hazardTitle : 'Waiting for the first reading'}
               </p>
-              <p className="mt-1 flex items-baseline gap-1">
-                <span className="text-[22px] font-medium leading-none tabular-nums text-ink-100">
-                  {live ? live.battery : '–'}
-                </span>
-                <span className="text-[12px] text-ink-400">%</span>
-              </p>
+              <span className={`text-[12px] font-medium ${liveTone.text}`}>
+                {liveRule ? liveTone.label : 'No reading'}
+              </span>
             </div>
-          </section>
+
+            <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <Metric
+                label="Heart rate"
+                value={live ? String(live.heartRate) : '–'}
+                unit="BPM"
+                severity={live ? heartRateSeverity(live.heartRate) : undefined}
+              />
+              <Metric
+                label="Blood oxygen"
+                value={live ? String(live.spO2) : '–'}
+                unit="%"
+                severity={live ? oxygenSeverity(live.spO2) : undefined}
+              />
+              <Metric
+                label="Body temperature"
+                value={live ? live.bodyTemp.toFixed(1) : '–'}
+                unit="°C"
+                severity={live ? temperatureSeverity(live.bodyTemp) : undefined}
+              />
+              <Metric
+                label="Stress signal"
+                value={live ? live.gsrStress.toFixed(1) : '–'}
+                unit="μS"
+                severity={live ? stressSeverity(live.gsrStress) : undefined}
+              />
+              <Metric
+                label="Radiation dose"
+                value={live ? live.radiationDoseRate.toFixed(2) : '–'}
+                unit="mSv/hr"
+                severity={live ? radiationSeverity(live.radiationDoseRate) : undefined}
+              />
+              <Metric label="Total mission dose" value={live ? live.cumulativeRadiation.toFixed(2) : '–'} unit="mSv" />
+              <Metric label="Signal quality" value={live ? String(live.signalQuality) : '–'} unit="%" />
+              <div className="glass rounded-xl px-4 py-3">
+                <p className="flex items-center gap-1.5 text-[11.5px] text-ink-500">
+                  <Battery className="h-3.5 w-3.5" strokeWidth={1.6} />
+                  Sensor battery
+                </p>
+                <p className="mt-1 flex items-baseline gap-1">
+                  <span className="text-[22px] font-medium leading-none tabular-nums text-ink-100">
+                    {live ? live.battery : '–'}
+                  </span>
+                  <span className="text-[12px] text-ink-400">%</span>
+                </p>
+              </div>
+            </section>
+          </div>
         </div>
       </main>
 
@@ -522,12 +593,25 @@ function Step({ number, text }: { number: string; text: string }) {
   );
 }
 
-function Metric({ label, value, unit }: { label: string; value: string; unit: string }) {
+function Metric({
+  label,
+  value,
+  unit,
+  severity
+}: {
+  label: string;
+  value: string;
+  unit: string;
+  severity?: AlertSeverity;
+}) {
+  const tone = severityTone(severity ?? 'nominal');
+  const surface =
+    severity === 'critical' ? 'glass-tint-critical' : severity === 'caution' ? 'glass-tint-caution' : 'glass';
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-space-900 px-4 py-3">
+    <div className={`rounded-xl p-4 ${surface}`}>
       <p className="text-[11.5px] text-ink-500">{label}</p>
       <p className="mt-1 flex items-baseline gap-1">
-        <span className="text-[22px] font-medium leading-none tabular-nums text-ink-100">{value}</span>
+        <span className={`text-[22px] font-medium leading-none tabular-nums ${tone.text}`}>{value}</span>
         <span className="text-[12px] text-ink-400">{unit}</span>
       </p>
     </div>

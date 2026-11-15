@@ -16,17 +16,20 @@ const TONE = {
   nominal: {
     dot: 'bg-positive',
     text: 'text-positive',
-    border: 'border-white/[0.08]'
+    value: 'text-ink-100',
+    surface: 'glass'
   },
   caution: {
     dot: 'bg-caution',
     text: 'text-caution',
-    border: 'border-caution/30'
+    value: 'text-caution',
+    surface: 'glass-tint-caution'
   },
   critical: {
     dot: 'bg-critical',
     text: 'text-critical',
-    border: 'border-critical/40'
+    value: 'text-critical',
+    surface: 'glass-tint-critical'
   }
 } as const;
 
@@ -40,7 +43,7 @@ export const VitalCard: React.FC<VitalCardProps> = ({ label, tip, meta, value, u
   const tone = TONE[severity] ?? TONE.nominal;
 
   return (
-    <div className={`flex h-full flex-col rounded-xl border bg-space-900 p-5 ${tone.border}`}>
+    <div className={`flex h-full flex-col rounded-2xl p-5 lift ${tone.surface}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-center text-[14px] font-medium text-ink-200">
@@ -56,7 +59,7 @@ export const VitalCard: React.FC<VitalCardProps> = ({ label, tip, meta, value, u
       </div>
 
       <div className="mt-5 flex items-baseline gap-1.5">
-        <span className="text-[34px] font-medium leading-none tracking-tight tabular-nums text-ink-100">{value}</span>
+        <span className={`text-[34px] font-medium leading-none tracking-tight tabular-nums ${tone.value}`}>{value}</span>
         <span className="text-[13px] text-ink-400">{unit}</span>
       </div>
 

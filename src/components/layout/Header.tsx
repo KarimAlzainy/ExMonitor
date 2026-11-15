@@ -57,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
           : 'Practice readings';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-space-950">
+    <header className="glass-strong sticky top-0 z-40">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex h-16 items-center gap-3">
           <div className="min-w-0 shrink-0">

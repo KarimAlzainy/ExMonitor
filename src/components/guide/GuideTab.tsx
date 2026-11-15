@@ -67,7 +67,7 @@ export const GuideTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+      <section className="glass rounded-2xl p-5">
         <h1 className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
           <BookOpen className="h-4 w-4 text-ink-400" strokeWidth={1.5} />
           How it works
@@ -102,7 +102,7 @@ export const GuideTab: React.FC = () => {
         </ul>
       </section>
 
-      <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+      <section className="glass rounded-2xl p-5">
         <h2 className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
           A walkthrough
           <InfoTip
@@ -123,7 +123,7 @@ export const GuideTab: React.FC = () => {
         </ol>
       </section>
 
-      <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+      <section className="glass rounded-2xl p-5">
         <h2 className="text-[16px] font-medium text-ink-100">What runs where</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <Piece

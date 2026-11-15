@@ -84,6 +84,23 @@ export interface SensorFrame {
   ppg: number[];
 }
 
+export interface DemoState {
+  running: boolean;
+  paused: boolean;
+  stepIndex: number;
+  stepCount: number;
+  label: string;
+  note: string;
+  progress: number;
+}
+
+export interface DemoOverlayEvent {
+  title: string;
+  description: string;
+  protocol: string;
+  stepLabel: string;
+}
+
 export interface PeerNode {
   nodeId: string;
   name: string;

@@ -680,7 +680,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-white/[0.08] bg-space-900 p-5">
+    <section className="glass rounded-2xl p-5">
       <div className="mb-4">
         <h2 className="flex items-center gap-2 text-[16px] font-medium text-ink-100">
           <Icon className="h-4 w-4 text-ink-400" strokeWidth={1.5} />

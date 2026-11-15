@@ -38,7 +38,7 @@ export const EmergencyOverlay: React.FC = () => {
         aria-modal="true"
         aria-live="assertive"
         aria-label={`Emergency alert from ${event.astronautName}`}
-        className="relative max-h-[94dvh] w-full max-w-2xl overflow-y-auto rounded-xl border border-critical/35 bg-space-900"
+        className="relative max-h-[94dvh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-critical/35 bg-space-900"
       >
         <div className="h-0.5 w-full bg-critical" aria-hidden="true" />
 

@@ -8,6 +8,7 @@ import { SettingsTab } from './components/setup/SettingsTab';
 import { GuideTab } from './components/guide/GuideTab';
 import { EmergencyOverlay } from './components/emergency/EmergencyOverlay';
 import { SenderAlertPanel } from './components/emergency/SenderAlertPanel';
+import { DemoAlertOverlay } from './components/dashboard/DemoAlertOverlay';
 import { SetupWizard } from './components/onboarding/SetupWizard';
 import { CrewProfile } from './types/telemetry';
 import {
@@ -29,10 +30,15 @@ const AppShell: React.FC<{ onRunSetup: () => void }> = ({ onRunSetup }) => {
 
   return (
     <div
-      className={`bg-space-950 text-ink-100 ${
+      className={`relative bg-space-950 text-ink-100 ${
         fillsWindow ? 'flex h-[100dvh] flex-col overflow-hidden' : 'min-h-screen overflow-x-clip'
       }`}
     >
+      {/* Ambient depth behind the whole console. Fixed, non-interactive, and
+          very low opacity so it never competes with the readings. */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
+        <div className="ambient-glow" />
+      </div>
       <Header activeTab={tab} onTabChange={setTab} />
       <main
         className={`mx-auto w-full max-w-6xl px-4 sm:px-6 ${
@@ -59,6 +65,7 @@ const AppShell: React.FC<{ onRunSetup: () => void }> = ({ onRunSetup }) => {
       )}
       <SenderAlertPanel />
       <EmergencyOverlay />
+      <DemoAlertOverlay />
     </div>
   );
 };

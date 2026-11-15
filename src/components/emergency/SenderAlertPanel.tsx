@@ -23,7 +23,7 @@ export const SenderAlertPanel: React.FC = () => {
       <section
         role="status"
         aria-live="polite"
-        className={`pointer-events-auto w-full max-w-sm overflow-hidden rounded-xl border bg-space-900 shadow-2xl ${
+        className={`pointer-events-auto w-full max-w-sm overflow-hidden rounded-2xl border bg-space-900 shadow-2xl ${
           cancelled ? 'border-white/[0.12]' : 'border-critical/35'
         }`}
       >
