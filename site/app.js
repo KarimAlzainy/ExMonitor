@@ -1,8 +1,8 @@
 const MODELS = [
   {
-    id: 'phi3',
+    id: 'phi3:3.8b-mini-4k-instruct-q8_0',
     name: 'Phi-3.5 mini',
-    file: 'exmonitor-phi3',
+    file: 'exmonitor-phi3:3.8b-mini-4k-instruct-q8_0',
     download: 'about 2.1 GB',
     note: 'The strongest answers. Best on a recent laptop with 8 GB of memory or more.'
   },
@@ -82,12 +82,12 @@ function recommendedTier() {
   const discrete = /nvidia|geforce|rtx|quadro|radeon|amd|arc|discrete/.test(gpu);
 
   if (state.memory == null) {
-    if ((state.cores ?? 0) >= 8 && discrete) return 'phi3';
+    if ((state.cores ?? 0) >= 8 && discrete) return 'phi3:3.8b-mini-4k-instruct-q8_0';
     if ((state.cores ?? 0) >= 4) return 'gemma2';
     return 'none';
   }
 
-  if (state.memory >= 16 && discrete) return 'phi3';
+  if (state.memory >= 16 && discrete) return 'phi3:3.8b-mini-4k-instruct-q8_0';
   if (state.memory >= 16) return 'llama3';
   if (state.memory >= 8 && discrete) return 'llama3';
   if (state.memory >= 4) return 'gemma2';

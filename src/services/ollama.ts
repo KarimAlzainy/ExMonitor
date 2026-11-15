@@ -12,7 +12,7 @@ export interface OllamaConfig {
 }
 
 export const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
-export const DEFAULT_OLLAMA_MODEL = 'phi3';
+export const DEFAULT_OLLAMA_MODEL = 'phi3:3.8b-mini-4k-instruct-q8_0';
 
 const URL_KEY = 'exmonitor.ollama.url';
 const MODEL_KEY = 'exmonitor.ollama.model';

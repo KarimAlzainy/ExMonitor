@@ -12,7 +12,7 @@ import { ZipArchive } from 'archiver';
  *
  *   node scripts/package-bundles.mjs
  *   node scripts/package-bundles.mjs --out bundles --manifest site/downloads.json
- *   node scripts/package-bundles.mjs --models phi3,none
+ *   node scripts/package-bundles.mjs --models phi3:3.8b-mini-4k-instruct-q8_0,none
  *   node scripts/package-bundles.mjs --platforms windows
  *   node scripts/package-bundles.mjs --site-copy
  */
@@ -37,7 +37,7 @@ const siteOut = path.resolve(root, argValue('--site-out', path.join('site', 'dow
 // The published site points at the GitHub release, so the ZIPs stay out of the
 // Worker upload by default. Pass --site-copy to keep a local copy in site/.
 const copyToSite = process.argv.includes('--site-copy');
-const selection = argValue('--models', 'phi3,llama3,gemma2,none')
+const selection = argValue('--models', 'phi3:3.8b-mini-4k-instruct-q8_0,llama3,gemma2,none')
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
@@ -48,10 +48,10 @@ const platformSelection = argValue('--platforms', 'windows,macos,linux')
 
 const MODELS = [
   {
-    id: 'phi3',
+    id: 'phi3:3.8b-mini-4k-instruct-q8_0',
     title: 'Phi-3.5 mini',
     folder: 'ExMonitor-Phi-3.5',
-    zip: 'exmonitor-phi3',
+    zip: 'exmonitor-phi3:3.8b-mini-4k-instruct-q8_0',
     download: 'about 2.1 GB'
   },
   {

@@ -26,7 +26,7 @@ export type ChatRoleMessage = { role: 'system' | 'user' | 'assistant'; content: 
 
 export const MODEL_OPTIONS: ModelOption[] = [
   {
-    id: 'phi3',
+    id: 'phi3:3.8b-mini-4k-instruct-q8_0',
     name: 'Phi-3.5 mini',
     shortName: 'Phi-3.5',
     download: 'about 2.1 GB',
@@ -111,7 +111,7 @@ export function modelName(tier: AiModelTier): string {
 }
 
 function isTier(value: unknown): value is AiModelTier {
-  return value === 'phi3' || value === 'llama3' || value === 'gemma2' || value === 'none';
+  return value === 'phi3:3.8b-mini-4k-instruct-q8_0' || value === 'llama3' || value === 'gemma2' || value === 'none';
 }
 
 export function loadBundleModel(): Promise<BundleModelConfig | null> {
@@ -172,7 +172,7 @@ function bundleStamp(bundle: BundleModelConfig): string {
 }
 
 /**
- * The download page links to the hosted copy as /app/?model=phi3. Apply that
+ * The download page links to the hosted copy as /app/?model=phi3:3.8b-mini-4k-instruct-q8_0. Apply that
  * choice once, keep it, and remove it from the address so a later choice in
  * Settings is not overridden on every reload.
  */
@@ -241,7 +241,7 @@ export function recommendedTier(ramGb: number, webGpu: boolean, gpuLabel = ''): 
   const gpu = gpuLabel.toLowerCase();
   const discrete = /nvidia|geforce|rtx|quadro|radeon|amd|arc|discrete/.test(gpu);
 
-  if (ramGb >= 16 && discrete) return 'phi3';
+  if (ramGb >= 16 && discrete) return 'phi3:3.8b-mini-4k-instruct-q8_0';
   if (ramGb >= 16) return 'llama3';
   if (ramGb >= 8 && discrete) return 'llama3';
   if (ramGb >= 4) return 'gemma2';

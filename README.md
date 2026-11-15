@@ -99,8 +99,8 @@ Answers can come from either of two sources, chosen on the assistant screen:
   - **Llama 3.2 3B** — balanced, about 1.8 GB.
   - **Gemma 2 2B** — smallest, about 1.5 GB.
   - **No AI** — written action cards only, nothing to download.
-- **Ollama** — a model already installed on this computer, such as the one pulled with `ollama pull phi3`.
-  Set the server address (default `http://localhost:11434`) and the model name (default `phi3`) on the
+- **Ollama** — a model already installed on this computer, such as the one pulled with `ollama pull phi3:3.8b-mini-4k-instruct-q8_0`.
+  Set the server address (default `http://localhost:11434`) and the model name (default `phi3:3.8b-mini-4k-instruct-q8_0`) on the
   assistant screen. There is no download and no graphics-memory requirement.
 
 On-device answers come from [WebLLM](https://github.com/mlc-ai/web-llm) running in a worker with WebGPU. The
@@ -154,7 +154,7 @@ site by default, because they are published on a GitHub release instead of being
 every deploy. Options:
 
 ```bash
-node scripts/package-bundles.mjs --models phi3,none --platforms windows --out bundles
+node scripts/package-bundles.mjs --models phi3:3.8b-mini-4k-instruct-q8_0,none --platforms windows --out bundles
 ```
 
 Add `--site-copy` if you also want a local set inside `site/downloads/`.

@@ -240,7 +240,7 @@ export const AiCopilotTab: React.FC = () => {
       setOllamaMessage(
         models.length
           ? `Connected. ${models.length} model(s) available.`
-          : 'Connected, but no model is installed yet. Run: ollama pull phi3'
+          : 'Connected, but no model is installed yet. Run: ollama pull phi3:3.8b-mini-4k-instruct-q8_0'
       );
     } catch (error) {
       setOllamaModels([]);
@@ -585,7 +585,7 @@ export const AiCopilotTab: React.FC = () => {
                   value={ollama.model}
                   list="ollama-models"
                   onChange={(event) => setOllama((current) => ({ ...current, model: event.target.value }))}
-                  placeholder="phi3"
+                  placeholder="phi3:3.8b-mini-4k-instruct-q8_0"
                   className="mt-1 h-9 w-full rounded-lg border border-white/[0.08] bg-space-950 px-2.5 font-mono text-[12px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
                 />
                 <datalist id="ollama-models">

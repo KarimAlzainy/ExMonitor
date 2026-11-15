@@ -22,7 +22,7 @@ export interface CrewProfile {
   completedAt: number | null;
 }
 
-export type AiModelTier = 'phi3' | 'llama3' | 'gemma2' | 'none';
+export type AiModelTier = 'phi3:3.8b-mini-4k-instruct-q8_0' | 'llama3' | 'gemma2' | 'none';
 
 export interface SystemDiagnostic {
   estimatedRamGb: number;
