@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Activity } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
+import { THRESHOLDS } from '../../services/safetyRules';
 import { InfoTip } from '../ui/InfoTip';
 
 function clamp(value: number, min: number, max: number): number {
@@ -196,7 +197,11 @@ export const EcgMonitor: React.FC = () => {
         : { dot: 'bg-positive', text: 'text-positive' };
 
   const rhythm =
-    vitals.heartRate > 125 ? 'Fast rhythm' : vitals.heartRate < 45 ? 'Slow rhythm' : 'Steady rhythm';
+    vitals.heartRate > THRESHOLDS.heartRate.cautionHigh
+      ? 'Fast rhythm'
+      : vitals.heartRate < THRESHOLDS.heartRate.slowRhythm
+        ? 'Slow rhythm'
+        : 'Steady rhythm';
   const updated = new Date(vitals.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',

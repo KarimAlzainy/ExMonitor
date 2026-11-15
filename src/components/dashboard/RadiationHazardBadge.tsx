@@ -1,17 +1,18 @@
 import React from 'react';
 import { Radiation } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
+import { THRESHOLDS } from '../../services/safetyRules';
 import { InfoTip } from '../ui/InfoTip';
 
 export const RadiationHazardBadge: React.FC = () => {
   const { vitals } = useTelemetry();
   const { radiationDoseRate, cumulativeRadiation } = vitals;
 
-  const isCritical = radiationDoseRate >= 1.0;
-  const isCaution = radiationDoseRate >= 0.3 && !isCritical;
+  const isCritical = radiationDoseRate >= THRESHOLDS.radiationDoseRate.critical;
+  const isCaution = radiationDoseRate >= THRESHOLDS.radiationDoseRate.caution && !isCritical;
 
-  const dosePercent = Math.min(100, (radiationDoseRate / 1.0) * 100);
-  const cumulativePercent = Math.min(100, (cumulativeRadiation / 25) * 100);
+  const dosePercent = Math.min(100, (radiationDoseRate / THRESHOLDS.radiationDoseRate.critical) * 100);
+  const cumulativePercent = Math.min(100, (cumulativeRadiation / THRESHOLDS.radiationCareerLimit) * 100);
 
   const tone = isCritical
     ? { dot: 'bg-critical', text: 'text-critical', bar: 'bg-critical' }
@@ -30,12 +31,12 @@ export const RadiationHazardBadge: React.FC = () => {
             <h2 className="flex items-center text-[16px] font-medium text-ink-100">
               Radiation
               <InfoTip
-                text="Dose rate is the radiation arriving right now. Total dose adds up over the mission. The caution line is 0.30 and the critical line is 1.00 millisieverts per hour."
+                text="Dose rate is the radiation arriving right now. Total dose adds up over the mission. The caution line is 0.30 and the critical line is 1.00 millisieverts per hour; these are simulation alert levels."
                 label="Radiation"
               />
             </h2>
           </div>
-          <p className="mt-1 text-[12px] text-ink-400">Suit dosimeter · NASA MR092L reference</p>
+          <p className="mt-1 text-[12px] text-ink-400">Suit dosimeter · simulated reading</p>
         </div>
         <span className={`flex shrink-0 items-center gap-1.5 rounded-full bg-space-950 px-2 py-0.5 text-[12px] font-medium ${tone.text}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
@@ -76,9 +77,9 @@ export const RadiationHazardBadge: React.FC = () => {
           <div className="flex items-baseline justify-between gap-2">
             <span className="flex items-center text-[12px] text-ink-400">
               Total mission dose
-              <InfoTip text="The running total since the mission started. The 30-day guidance limit shown here is 25 milli-sieverts." />
+              <InfoTip text="The running total since the mission started. The bar is scaled to the 600 mSv career limit from NASA-STD-3001 Volume 1, Rev C." />
             </span>
-            <span className="text-[12px] text-ink-400">30-day guide 25 mSv</span>
+            <span className="text-[12px] text-ink-400">Career limit 600 mSv</span>
           </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span className="text-[30px] font-medium leading-none tabular-nums text-ink-100">
@@ -94,7 +95,7 @@ export const RadiationHazardBadge: React.FC = () => {
           </div>
           <div className="mt-1.5 flex justify-between font-mono text-[11px] text-ink-400">
             <span>0</span>
-            <span>25 mSv</span>
+            <span>600 mSv</span>
           </div>
         </div>
       </div>

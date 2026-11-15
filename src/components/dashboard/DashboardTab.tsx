@@ -1,33 +1,35 @@
 import React from 'react';
-import { AlertOctagon, Radio } from 'lucide-react';
+import { AlertOctagon, Play, Radio, Square } from 'lucide-react';
 import { AlertSeverity } from '../../types/telemetry';
 import { useTelemetry } from '../../context/TelemetryContext';
+import { THRESHOLDS } from '../../services/safetyRules';
+import { SCENARIO_LABELS } from '../../sensors/sensorEngine';
 import { EcgMonitor } from './EcgMonitor';
 import { VitalCard } from './VitalCard';
 import { RadiationHazardBadge } from './RadiationHazardBadge';
 import { InfoTip } from '../ui/InfoTip';
 
 function heartRateSeverity(heartRate: number): AlertSeverity {
-  if (heartRate > 155 || heartRate < 42) return 'critical';
-  if (heartRate > 125) return 'caution';
+  if (heartRate > THRESHOLDS.heartRate.high || heartRate < THRESHOLDS.heartRate.low) return 'critical';
+  if (heartRate > THRESHOLDS.heartRate.cautionHigh) return 'caution';
   return 'nominal';
 }
 
 function oxygenSeverity(spO2: number): AlertSeverity {
-  if (spO2 < 88) return 'critical';
-  if (spO2 < 93) return 'caution';
+  if (spO2 < THRESHOLDS.spO2.critical) return 'critical';
+  if (spO2 < THRESHOLDS.spO2.caution) return 'caution';
   return 'nominal';
 }
 
 function temperatureSeverity(bodyTemp: number): AlertSeverity {
-  if (bodyTemp >= 38.8) return 'critical';
-  if (bodyTemp >= 37.8) return 'caution';
+  if (bodyTemp >= THRESHOLDS.bodyTemp.critical) return 'critical';
+  if (bodyTemp >= THRESHOLDS.bodyTemp.caution) return 'caution';
   return 'nominal';
 }
 
 function stressSeverity(gsrStress: number): AlertSeverity {
-  if (gsrStress >= 22) return 'critical';
-  if (gsrStress >= 12) return 'caution';
+  if (gsrStress >= THRESHOLDS.gsrStress.critical) return 'critical';
+  if (gsrStress >= THRESHOLDS.gsrStress.caution) return 'caution';
   return 'nominal';
 }
 
@@ -38,7 +40,11 @@ export const DashboardTab: React.FC = () => {
     triggerEmergencySOS,
     ownAlert,
     sensorStatus,
-    sensorId
+    sensorId,
+    demoActive,
+    demoScenario,
+    startDemo,
+    stopDemo
   } = useTelemetry();
 
   const statusTone =
@@ -73,7 +79,52 @@ export const DashboardTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {sensorNotice && (
+      {demoActive ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-signal/30 bg-signal/[0.06] px-4 py-3">
+          <div className="flex items-start gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 animate-pulse rounded-full bg-signal" />
+            <div>
+              <p className="text-[13px] font-medium text-ink-100">
+                Demo running · {demoScenario ? SCENARIO_LABELS[demoScenario].name : 'starting'}
+              </p>
+              <p className="mt-0.5 text-[12px] leading-5 text-ink-400">
+                {demoScenario
+                  ? `${SCENARIO_LABELS[demoScenario].note} The console will raise the crew alert during the low-oxygen phase.`
+                  : 'Starting the built-in sensor.'}{' '}
+                No second device or network needed.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={stopDemo}
+            className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.1] bg-space-900 px-3 text-[13px] font-medium text-ink-200 transition-colors hover:border-white/20 hover:text-ink-100"
+          >
+            <Square className="h-3.5 w-3.5" strokeWidth={2} />
+            Stop demo
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[0.08] bg-space-900 px-4 py-3">
+          <div>
+            <p className="text-[13px] font-medium text-ink-100">See it work in one tap</p>
+            <p className="mt-0.5 max-w-xl text-[12px] leading-5 text-ink-400">
+              Runs a sensor inside this console and cycles rest, exercise, low oxygen, radiation storm and recovery.
+              It needs no second device, no camera and no network.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={startDemo}
+            className="flex h-10 items-center gap-2 rounded-lg bg-chalk px-4 text-[13px] font-medium text-space-950 transition-colors hover:brightness-105"
+          >
+            <Play className="h-3.5 w-3.5" strokeWidth={2} />
+            Start Demo
+          </button>
+        </div>
+      )}
+
+      {!demoActive && sensorNotice && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution/25 bg-caution/[0.04] px-4 py-3">
           <p className="flex items-center gap-2 text-[13px] leading-5 text-ink-200">
             <Radio className="h-4 w-4 shrink-0 text-caution" strokeWidth={1.6} />
@@ -100,8 +151,11 @@ export const DashboardTab: React.FC = () => {
             <span className={statusTone.title}>{ruleResult.hazardTitle}</span>
           </p>
           <span className="flex items-center gap-1 font-mono text-[12px] text-ink-400">
-            {ruleResult.nasaRef}
-            <InfoTip text="The NASA reference or flight rule behind this status." label="NASA reference" />
+            {ruleResult.guidanceRef}
+            <InfoTip
+              text="The written rule behind this status. The rules use teaching values for a training simulation, not real flight rules."
+              label="Rule"
+            />
           </span>
         </div>
         <p className="mt-3 max-w-3xl text-[14px] leading-6 text-ink-300">{ruleResult.hazardDescription}</p>
@@ -186,8 +240,8 @@ export const DashboardTab: React.FC = () => {
       </div>
 
       <p className="text-[12px] leading-5 text-ink-400">
-        The console watches the NASA hazards of spaceflight: radiation, isolation, distance from Earth, gravity
-        changes and a closed environment.
+        The console watches five hazards of spaceflight: radiation, isolation, distance from Earth, gravity changes
+        and a closed environment. All readings are simulated.
       </p>
     </div>
   );

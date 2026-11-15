@@ -15,7 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { ChatMessage } from '../../types/telemetry';
-import { NASA_SYMPTOM_PROTOCOLS, SymptomRuleCard } from '../../services/nasaRules';
+import { SYMPTOM_PROTOCOLS, SymptomRuleCard } from '../../services/safetyRules';
 import {
   AiProvider,
   ChatMode,
@@ -59,7 +59,7 @@ const QUICK_SYMPTOMS: { id: string; label: string; icon: LucideIcon }[] = [
 ];
 
 // The rules mode still has to understand free text. These tags let a typed
-// symptom resolve to the matching written NASA action card.
+// symptom resolve to the matching written action card.
 const SYMPTOM_KEYWORDS: Record<string, string[]> = {
   chest_pain: ['chest', 'heart', 'cardiac', 'pressure', 'pain'],
   dizziness_hypoxia: ['dizzy', 'dizziness', 'hypoxia', 'oxygen', 'breath', 'faint', 'lightheaded', 'vision'],
@@ -70,7 +70,7 @@ const SYMPTOM_KEYWORDS: Record<string, string[]> = {
 
 function matchProtocol(query: string): SymptomRuleCard | undefined {
   const normalized = query.toLowerCase();
-  const scores = NASA_SYMPTOM_PROTOCOLS.map((card) => ({
+  const scores = SYMPTOM_PROTOCOLS.map((card) => ({
     card,
     score: (SYMPTOM_KEYWORDS[card.id] ?? []).filter((keyword) => normalized.includes(keyword)).length
   })).filter((entry) => entry.score > 0);
@@ -313,7 +313,7 @@ export const AiCopilotTab: React.FC = () => {
     } catch (error) {
       if (isModelLoadCancelled(error)) {
         setPrepareError(null);
-        setPrepareNotice('Download cancelled. The written NASA rules are available.');
+        setPrepareNotice('Download cancelled. The written rules are available.');
         setModelReady(false);
         return false;
       }
@@ -331,7 +331,7 @@ export const AiCopilotTab: React.FC = () => {
     setPreparing(false);
     setPrepareError(null);
     setPrepareText('');
-    setPrepareNotice('Download cancelled. The written NASA rules are available.');
+    setPrepareNotice('Download cancelled. The written rules are available.');
   };
 
   const downloadNow = async () => {
@@ -349,7 +349,7 @@ export const AiCopilotTab: React.FC = () => {
             name: protocol.name,
             diagnosis: evaluation.diagnosis,
             steps: evaluation.steps,
-            nasaCode: evaluation.nasaCode
+            guidanceCode: evaluation.guidanceCode
           }
         : undefined
     );
@@ -374,7 +374,7 @@ export const AiCopilotTab: React.FC = () => {
         text: '',
         timestamp: Date.now(),
         isStreaming: true,
-        protocolBadge: usingRules ? 'NASA rules' : doctorMode ? 'Doctor mode' : 'Assistant'
+        protocolBadge: usingRules ? 'Written rules' : doctorMode ? 'Doctor mode' : 'Assistant'
       }
     ]);
 
@@ -389,7 +389,7 @@ export const AiCopilotTab: React.FC = () => {
         } else {
           setReplyText(
             replyId,
-            'Assistant mode needs a model. Choose one in Settings, or switch to Doctor mode for the written NASA rules.'
+            'Assistant mode needs a model. Choose one in Settings, or switch to Doctor mode for the written rules.'
           );
         }
         return;
@@ -435,7 +435,7 @@ export const AiCopilotTab: React.FC = () => {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : 'The assistant could not answer. Open a symptom card above for the written NASA steps.';
+          : 'The assistant could not answer. Open a symptom card above for the written steps.';
       setMessages((previous) =>
         previous.map((entry) => (entry.id === replyId && !entry.text ? { ...entry, text: message } : entry))
       );
@@ -448,7 +448,7 @@ export const AiCopilotTab: React.FC = () => {
   };
 
   const onQuickSymptom = (id: string) => {
-    const protocol = NASA_SYMPTOM_PROTOCOLS.find((card) => card.id === id);
+    const protocol = SYMPTOM_PROTOCOLS.find((card) => card.id === id);
     if (!protocol) return;
 
     const plainRules = provider === 'ondevice' && rulesMode;
@@ -468,7 +468,7 @@ export const AiCopilotTab: React.FC = () => {
           sender: 'system',
           text: protocol.description,
           timestamp: Date.now(),
-          protocolBadge: evaluation.nasaCode,
+          protocolBadge: evaluation.guidanceCode,
           actionCard: { ...evaluation, name: protocol.name, description: protocol.description }
         }
       ]);
@@ -484,7 +484,7 @@ export const AiCopilotTab: React.FC = () => {
       : message.sender === 'ai'
         ? 'AI assistant'
         : message.actionCard
-          ? 'NASA action card'
+          ? 'Action card'
           : 'Console';
 
   const suggested = diagnostic.recommendedModel;
@@ -655,7 +655,7 @@ export const AiCopilotTab: React.FC = () => {
                       diagnostic.gpuTier,
                       suggested
                     )}
-                    {rulesMode ? ' The written NASA rules are active until you switch.' : ''}
+                    {rulesMode ? ' The written rules are active until you switch.' : ''}
                   </p>
                 </div>
               </div>
@@ -685,7 +685,7 @@ export const AiCopilotTab: React.FC = () => {
         {modelMissingModel && (
           <div className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-3">
             <p className="text-[12px] leading-5 text-ink-400">
-              This browser cannot run the on-device model. Doctor mode still uses the written NASA rules, and you can
+              This browser cannot run the on-device model. Doctor mode still uses the written rules, and you can
               point the assistant at a local Ollama server instead.
             </p>
             <button
@@ -794,7 +794,7 @@ export const AiCopilotTab: React.FC = () => {
                         ))}
                       </ol>
                     </div>
-                    <p className="mt-2 font-mono text-[11px] text-ink-500">{message.actionCard.nasaCode}</p>
+                    <p className="mt-2 font-mono text-[11px] text-ink-500">{message.actionCard.guidanceCode}</p>
                   </div>
                 </div>
               </div>

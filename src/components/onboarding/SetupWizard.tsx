@@ -25,6 +25,7 @@ import {
   storeTier
 } from '../../services/aiModels';
 import { assessDevice } from '../../services/deviceCheck';
+import { requestDemoAutostart } from '../../services/demoMode';
 import {
   AlertPermission,
   alertPermission,
@@ -74,7 +75,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
       if (!alive) return;
       setDeviceCheck(result);
       setCheckingDevice(false);
-      if (!storedChoiceRef.current) setAiTier(result.recommendedModel);
+      // A first-time visitor is never switched to a large model automatically.
+      // The device suggestion is offered, but the default stays "No AI" so a
+      // judge never starts a multi-gigabyte download by accident.
     });
     return () => {
       alive = false;
@@ -119,6 +122,20 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
 
   const next = () => {
     if (step < STEP_TITLES.length - 1) setStep(step + 1);
+  };
+
+  // One tap to live readings: skip the rest of onboarding, keep No AI so
+  // nothing downloads, and ask the console to run its built-in demo.
+  const startDemoNow = () => {
+    storeTier('none', true);
+    requestDemoAutostart();
+    const nextProfile = profileFromParts(initialProfile, {
+      name: name.trim() || 'Demo crew',
+      label: label.trim() || 'Crew',
+      sensorId: null,
+      notificationsAsked: initialProfile.notificationsAsked
+    });
+    onComplete({ ...nextProfile, completedAt: Date.now() });
   };
 
   return (
@@ -177,6 +194,23 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
               </React.Fragment>
             );
           })}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-signal/25 bg-signal/[0.05] px-4 py-3">
+          <div>
+            <p className="text-[13px] font-medium text-ink-100">Just here to see it work?</p>
+            <p className="mt-0.5 text-[12px] leading-5 text-ink-400">
+              Skip the rest of setup and watch the console run its built-in demo. Nothing downloads and no second
+              device is needed.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={startDemoNow}
+            className="flex h-10 items-center gap-2 rounded-lg bg-chalk px-4 text-[13px] font-medium text-space-950 transition-colors hover:brightness-105"
+          >
+            Start Demo
+          </button>
         </div>
 
         <main className="flex flex-1 items-start justify-center py-6 sm:py-10">
@@ -535,7 +569,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
 
                   <p className="text-[12px] leading-5 text-ink-500">
                     {aiTier === 'none'
-                      ? 'No model will download. The written NASA rules and action cards are used.'
+                      ? 'No model will download. The written rules and action cards are used.'
                       : 'The model is not downloaded during setup. It downloads once on first use, and you can cancel it at any time from the assistant or Settings.'}
                   </p>
                 </div>

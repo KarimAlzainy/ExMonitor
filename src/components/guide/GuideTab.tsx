@@ -25,8 +25,8 @@ export const GuideTab: React.FC = () => {
       name: 'Isolation',
       detail:
         aiModelTier === 'none'
-          ? 'The on-board assistant is off, so the written NASA action cards do all the work. They stay available on every copy.'
-          : `The on-board assistant is ${modelName(aiModelTier)} and runs on this device. The written NASA action cards stay available even when no model is loaded.`
+          ? 'The on-board assistant is off, so the written action cards do all the work. They stay available on every copy.'
+          : `The on-board assistant is ${modelName(aiModelTier)} and runs on this device. The written action cards stay available even when no model is loaded.`
     },
     {
       name: 'Distance from Earth',
@@ -80,7 +80,7 @@ export const GuideTab: React.FC = () => {
           <span className="flex items-center gap-1.5">
             <span className={`h-1.5 w-1.5 rounded-full ${statusTone.dot}`} />
             <span className={statusTone.text}>{ruleResult.hazardTitle}</span>
-            <span className="font-mono text-[11px] text-ink-500">{ruleResult.nasaRef}</span>
+            <span className="font-mono text-[11px] text-ink-500">{ruleResult.guidanceRef}</span>
           </span>
           <span>{sensorText}</span>
           <span>{linkText}</span>

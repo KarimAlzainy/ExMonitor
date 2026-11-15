@@ -160,7 +160,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
       setModelError(
         error instanceof Error
           ? error.message
-          : 'The model could not start. The written NASA rules still work.'
+          : 'The model could not start. The written rules still work.'
       );
       setModelReady(false);
     } finally {
@@ -615,7 +615,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
 
         {aiModelTier === 'none' && (
           <p className="mt-3 text-[12px] leading-5 text-ink-500">
-            No model will download. The AI assistant uses the written NASA action cards and the rules engine.
+            No model will download. The AI assistant uses the written action cards and the rules engine.
           </p>
         )}
       </Section>

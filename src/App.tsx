@@ -46,7 +46,10 @@ const AppShell: React.FC<{ onRunSetup: () => void }> = ({ onRunSetup }) => {
       </main>
       {!fillsWindow && (
         <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-8 pt-2 text-[12px] text-ink-500 sm:px-6">
-          <span>NASA Space Apps Challenge · MR092L / MEDB 5.2 · Earth delay up to 22 min</span>
+          <span className="max-w-3xl">
+            Built with AI-assisted coding. Training simulation only — not a medical device. Part of the NASA Space
+            Apps Challenge 2026.
+          </span>
           <a
             href="sensors.html"
             target="_blank"

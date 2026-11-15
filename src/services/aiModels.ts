@@ -4,6 +4,7 @@ import {
   CrewProfile,
   VitalsData
 } from '../types/telemetry';
+import { THRESHOLDS } from './safetyRules';
 
 export interface ModelOption {
   id: AiModelTier;
@@ -57,7 +58,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
     shortName: 'No AI',
     download: 'nothing to download',
     memory: 'no graphics memory needed',
-    note: 'Uses the written NASA rules only. Works on every device and never needs the internet.',
+    note: 'Uses the written rules only. Works on every device and never needs the internet.',
     webllmId: null
   }
 ];
@@ -254,10 +255,10 @@ export function recommendationReason(
   tier: AiModelTier = recommendedTier(ramGb, webGpu, gpuLabel)
 ): string {
   if (!webGpu) {
-    return 'This browser does not expose WebGPU, so the on-device model cannot run here. The written NASA rules still work.';
+    return 'This browser does not expose WebGPU, so the on-device model cannot run here. The written rules still work.';
   }
   if (tier === 'none') {
-    return `This device reports ${ramGb} GB of memory, which is below the safe minimum for a local model. Use the written NASA rules.`;
+    return `This device reports ${ramGb} GB of memory, which is below the safe minimum for a local model. Use the written rules.`;
   }
   if (tier === 'gemma2') {
     return `The smallest model is the safest fit for ${ramGb} GB of memory${gpuLabel ? ` and ${gpuLabel}` : ''}.`;
@@ -284,11 +285,11 @@ export function buildFlightSurgeonMessages(payload: {
 
   const context = [
     `Crew member: ${profile.name} (${profile.label}).`,
-    `Heart rate: ${vitals.heartRate} beats per minute. Usual range 60 to 100.`,
-    `Blood oxygen: ${vitals.spO2} percent. Below 93 is a caution, below 88 is critical.`,
-    `Body temperature: ${vitals.bodyTemp.toFixed(1)} degrees Celsius. Usual range 36.5 to 37.5.`,
+    `Heart rate: ${vitals.heartRate} beats per minute. A resting adult is usually 60 to 100; below ${THRESHOLDS.heartRate.low} or above ${THRESHOLDS.heartRate.high} is critical.`,
+    `Blood oxygen: ${vitals.spO2} percent. Below ${THRESHOLDS.spO2.caution} is a caution, below ${THRESHOLDS.spO2.critical} is critical.`,
+    `Body temperature: ${vitals.bodyTemp.toFixed(1)} degrees Celsius. Usual range 36.5 to 37.5; above ${THRESHOLDS.bodyTemp.caution} is a caution.`,
     `Skin response (stress signal): ${vitals.gsrStress.toFixed(1)} microsiemens. Usual range 2 to 8.`,
-    `Radiation dose rate: ${vitals.radiationDoseRate.toFixed(2)} millisieverts per hour. Caution from 0.30, critical from 1.00.`,
+    `Radiation dose rate: ${vitals.radiationDoseRate.toFixed(2)} millisieverts per hour. Caution from ${THRESHOLDS.radiationDoseRate.caution.toFixed(2)}, critical from ${THRESHOLDS.radiationDoseRate.critical.toFixed(2)}.`,
     `Total mission dose: ${vitals.cumulativeRadiation.toFixed(2)} millisieverts.`,
     `Readings come from: ${vitals.source === 'sensor' ? 'the paired body sensor' : 'the built-in practice generator'}.`
   ].join(' ');
@@ -322,7 +323,7 @@ export function buildRulesAnswer(payload: { userQuery: string; vitals: VitalsDat
   name: string;
   diagnosis: string;
   steps: string[];
-  nasaCode: string;
+  guidanceCode: string;
 }): string {
   const { userQuery, vitals } = payload;
   const lines: string[] = [];
@@ -334,7 +335,7 @@ export function buildRulesAnswer(payload: { userQuery: string; vitals: VitalsDat
     lines.push('### What to do now');
     for (const step of protocol.steps) lines.push(`- ${step}`);
     lines.push('');
-    lines.push(`Reference: ${protocol.nasaCode}`);
+    lines.push(`Reference: ${protocol.guidanceCode}`);
     return lines.join('\n');
   }
 
@@ -356,16 +357,16 @@ export function buildRulesAnswer(payload: { userQuery: string; vitals: VitalsDat
   if (flags.length) {
     lines.push('- Stop strenuous work, sit down and check that the sensor is sitting correctly.');
     lines.push('- Recheck the readings once, then send a crew alert if they stay out of range.');
-    lines.push('- Use one of the symptom cards above for the written NASA steps.');
+    lines.push('- Use one of the symptom cards above for the written steps.');
   } else {
     lines.push('- Keep working, drink water and recheck the readings later.');
-    lines.push('- Tap a symptom card above for written NASA steps about a specific problem.');
+    lines.push('- Tap a symptom card above for written steps about a specific problem.');
   }
   lines.push('');
   lines.push('### When to get help');
   lines.push('Send an emergency alert if blood oxygen falls below 88%, radiation reaches 1.00, or the person cannot stay awake.');
   lines.push('');
-  lines.push('Written NASA rules. No language model was used.');
+  lines.push('Written rules. No language model was used.');
   return lines.join('\n');
 }
 

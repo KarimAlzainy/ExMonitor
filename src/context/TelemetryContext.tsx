@@ -6,16 +6,19 @@ import {
   OwnAlert,
   PeerNode,
   SensorFrame,
+  SensorScenario,
   SensorStatus,
   SystemDiagnostic,
   VitalsData
 } from '../types/telemetry';
-import { evaluateBiometrics, RuleEvaluationResult } from '../services/nasaRules';
+import { evaluateBiometrics, RuleEvaluationResult } from '../services/safetyRules';
+import { SensorEngine } from '../sensors/sensorEngine';
 import { audioSynth } from '../services/audioSynth';
 import { crewLink } from '../services/crewLink';
 import { showAlertNotification } from '../services/notifications';
 import { loadBundleModel, resolveInitialTier, storeTier } from '../services/aiModels';
 import { assessDevice } from '../services/deviceCheck';
+import { consumeDemoAutostart } from '../services/demoMode';
 import { saveProfile } from '../services/profileStore';
 
 interface TelemetryContextType {
@@ -44,6 +47,10 @@ interface TelemetryContextType {
   sensorStatus: SensorStatus;
   sensorFrame: SensorFrame | null;
   sensorId: string | null;
+  demoActive: boolean;
+  demoScenario: SensorScenario | null;
+  startDemo: () => void;
+  stopDemo: () => void;
 }
 
 const TelemetryContext = createContext<TelemetryContextType | null>(null);
@@ -64,6 +71,16 @@ function makeEmergencyId(): string {
   return `alert-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+/**
+ * The built-in demo. It drives a SensorEngine inside the console so a judge can
+ * watch the full scenario cycle on a single device, with no second phone, no
+ * camera and no relay. It never makes a network request.
+ */
+const DEMO_SEQUENCE: SensorScenario[] = ['rest', 'exercise', 'hypoxia', 'radiation', 'recovery'];
+const DEMO_STEP_MS = 8000;
+const DEMO_FRAME_MS = 125;
+const DEMO_FRAME_SECONDS = 0.125;
+
 export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialProfile: CrewProfile }> = ({
   children,
   initialProfile
@@ -78,6 +95,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   const [crewLinkMode, setCrewLinkMode] = useState<'relay' | 'local' | 'off'>('off');
   const [sensorStatus, setSensorStatus] = useState<SensorStatus>(initialProfile.sensorId ? 'waiting' : 'off');
   const [sensorFrame, setSensorFrame] = useState<SensorFrame | null>(null);
+  const [demo, setDemo] = useState<{ scenario: SensorScenario; index: number } | null>(null);
   const [diagnostic, setDiagnostic] = useState<SystemDiagnostic>({
     estimatedRamGb: 8,
     cpuCores: 8,
@@ -99,6 +117,8 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   const sentTimerRef = useRef<number | null>(null);
   const builtinRef = useRef({ heartRate: 72, spO2: 98, bodyTemp: 36.8, gsrStress: 4.1, radiationDoseRate: 0.04 });
   const announceTimerRef = useRef<number | null>(null);
+  const demoActiveRef = useRef(false);
+  const demoEngineRef = useRef<SensorEngine | null>(null);
 
   profileRef.current = profile;
   vitalsRef.current = vitals;
@@ -169,6 +189,81 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     setAiModelTierState(tier);
     storeTier(tier, true);
   }, []);
+
+  // Start Demo. The engine is created inside the effect; these only flip the
+  // state that the effect watches.
+  const startDemo = useCallback(() => {
+    setDemo({ scenario: DEMO_SEQUENCE[0], index: 0 });
+  }, []);
+
+  const stopDemo = useCallback(() => {
+    setDemo(null);
+  }, []);
+
+  // If onboarding asked for the demo, start it as soon as the console mounts.
+  useEffect(() => {
+    if (consumeDemoAutostart()) setDemo({ scenario: DEMO_SEQUENCE[0], index: 0 });
+  }, []);
+
+  // The demo loop. Cycles the five scenarios and feeds the console's own
+  // vitals path, so the cards, the heart trace and the alert engine all react
+  // exactly as they would to a real sensor.
+  useEffect(() => {
+    demoActiveRef.current = demo !== null;
+    if (!demo) {
+      demoEngineRef.current = null;
+      return;
+    }
+
+    const engine = new SensorEngine('DEMO-INTERNAL');
+    engine.setScenario(DEMO_SEQUENCE[0]);
+    demoEngineRef.current = engine;
+    setSensorStatus('off');
+
+    let index = 0;
+    let framesSinceScenario = 0;
+
+    const frameTimer = window.setInterval(() => {
+      // Sweep quickly to the scenario's values over the first second, then hold,
+      // so the change is visible but the critical alert fires reliably.
+      const speed = framesSinceScenario < 10 ? 12 : 1;
+      framesSinceScenario += 1;
+      engine.step(DEMO_FRAME_SECONDS * speed);
+
+      const ecg: number[] = [];
+      for (let i = 0; i < 20; i += 1) ecg.push(engine.ecgSample());
+      const ppg: number[] = [];
+      for (let i = 0; i < 12; i += 1) ppg.push(engine.ppgSample());
+
+      const frame = engine.buildFrame(ecg, ppg);
+      setSensorFrame(frame);
+      setVitals({
+        heartRate: frame.heartRate,
+        spO2: frame.spO2,
+        bodyTemp: frame.bodyTemp,
+        gsrStress: frame.gsrStress,
+        radiationDoseRate: frame.radiationDoseRate,
+        cumulativeRadiation: frame.cumulativeRadiation,
+        timestamp: frame.sentAt,
+        signalQuality: frame.signalQuality,
+        source: 'sensor'
+      });
+    }, DEMO_FRAME_MS);
+
+    const scenarioTimer = window.setInterval(() => {
+      index = (index + 1) % DEMO_SEQUENCE.length;
+      framesSinceScenario = 0;
+      engine.setScenario(DEMO_SEQUENCE[index]);
+      setDemo({ scenario: DEMO_SEQUENCE[index], index });
+    }, DEMO_STEP_MS);
+
+    return () => {
+      window.clearInterval(frameTimer);
+      window.clearInterval(scenarioTimer);
+      demoEngineRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demo !== null]);
 
   // Crew link connection state.
   useEffect(() => {
@@ -250,6 +345,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
       }
 
       if (message.type === 'SENSOR_FRAME') {
+        if (demoActiveRef.current) return;
         const frame = message.payload;
         const active = profileRef.current.sensorId;
         if (!frame || !active || frame.sensorId !== active) return;
@@ -305,6 +401,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
 
   useEffect(() => {
     const timer = window.setInterval(() => {
+      if (demoActiveRef.current) return;
       if (sensorStatusRef.current === 'connected') return;
 
       const base = builtinRef.current;
@@ -377,7 +474,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
           ? currentRule.hazardDescription
           : `${currentProfile.name || 'A crew member'} pressed the emergency alert. Check the readings and send help.`),
       triggerVitals: { ...currentVitals },
-      activeProtocol: vitalEmergency ? currentRule.nasaRef : 'Crew-declared alert'
+      activeProtocol: vitalEmergency ? currentRule.guidanceRef : 'Crew-declared alert'
     };
 
     setOwnAlert({ event, status: 'sending', acknowledgedBy: [] });
@@ -470,7 +567,11 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     peers,
     sensorStatus,
     sensorFrame,
-    sensorId: profile.sensorId
+    sensorId: profile.sensorId,
+    demoActive: demo !== null,
+    demoScenario: demo?.scenario ?? null,
+    startDemo,
+    stopDemo
   };
 
   return <TelemetryContext.Provider value={value}>{children}</TelemetryContext.Provider>;
