@@ -52,9 +52,11 @@ export const GuideTab: React.FC = () => {
   const linkText =
     crewLinkMode === 'relay'
       ? `Relay connected · ${peerCount} other ${peerCount === 1 ? 'console' : 'consoles'}`
-      : crewLinkMode === 'local'
-        ? 'This browser only'
-        : 'Crew link offline';
+      : crewLinkMode === 'reconnecting'
+        ? 'Relay lost · reconnecting'
+        : crewLinkMode === 'local'
+          ? 'This browser only'
+          : 'Crew link offline';
 
   const sensorText =
     sensorStatus === 'connected'

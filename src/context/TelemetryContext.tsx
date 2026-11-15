@@ -41,7 +41,7 @@ interface TelemetryContextType {
   soundMuted: boolean;
   toggleSound: () => void;
   nodeId: string;
-  crewLinkMode: 'relay' | 'local' | 'off';
+  crewLinkMode: 'relay' | 'reconnecting' | 'local' | 'off';
   peerCount: number;
   peers: PeerNode[];
   sensorStatus: SensorStatus;
@@ -92,7 +92,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   const [incoming, setIncoming] = useState<EmergencyEvent[]>([]);
   const [ownAlert, setOwnAlert] = useState<OwnAlert | null>(null);
   const [peers, setPeers] = useState<PeerNode[]>([]);
-  const [crewLinkMode, setCrewLinkMode] = useState<'relay' | 'local' | 'off'>('off');
+  const [crewLinkMode, setCrewLinkMode] = useState<'relay' | 'reconnecting' | 'local' | 'off'>('off');
   const [sensorStatus, setSensorStatus] = useState<SensorStatus>(initialProfile.sensorId ? 'waiting' : 'off');
   const [sensorFrame, setSensorFrame] = useState<SensorFrame | null>(null);
   const [demo, setDemo] = useState<{ scenario: SensorScenario; index: number } | null>(null);
@@ -119,6 +119,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   const announceTimerRef = useRef<number | null>(null);
   const demoActiveRef = useRef(false);
   const demoEngineRef = useRef<SensorEngine | null>(null);
+  const demoRaisedAlertRef = useRef(false);
 
   profileRef.current = profile;
   vitalsRef.current = vitals;
@@ -193,6 +194,14 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   // Start Demo. The engine is created inside the effect; these only flip the
   // state that the effect watches.
   const startDemo = useCallback(() => {
+    // A previous demo run may have left its alert open. Clear only an alert
+    // that the demo itself raised, so restarting shows the whole flow again.
+    if (demoRaisedAlertRef.current && ownAlertRef.current) {
+      crewLink.cancelEmergency(ownAlertRef.current.event.id, profileRef.current.name || 'Crew member');
+      setOwnAlert(null);
+      autoSosRef.current = false;
+    }
+    demoRaisedAlertRef.current = false;
     setDemo({ scenario: DEMO_SEQUENCE[0], index: 0 });
   }, []);
 
@@ -267,8 +276,9 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
 
   // Crew link connection state.
   useEffect(() => {
-    return crewLink.onConnectionChange((relayOnline, localChannel) => {
+    return crewLink.onConnectionChange((relayOnline, localChannel, reconnecting) => {
       if (relayOnline) setCrewLinkMode('relay');
+      else if (reconnecting) setCrewLinkMode('reconnecting');
       else if (localChannel) setCrewLinkMode('local');
       else setCrewLinkMode('off');
     });
@@ -522,6 +532,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     }
     if (autoSosRef.current || ownAlertRef.current) return;
     autoSosRef.current = true;
+    demoRaisedAlertRef.current = demoActiveRef.current;
     triggerEmergencySOS(ruleResult.hazardTitle, ruleResult.hazardDescription);
   }, [ruleResult.isTriggerEmergency, ruleResult.hazardTitle, ruleResult.hazardDescription, triggerEmergencySOS]);
 

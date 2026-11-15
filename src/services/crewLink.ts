@@ -41,7 +41,9 @@ class CrewLinkService {
     return relayClient.hasLocalChannel();
   }
 
-  public onConnectionChange(callback: (relayOnline: boolean, localChannel: boolean) => void): () => void {
+  public onConnectionChange(
+    callback: (relayOnline: boolean, localChannel: boolean, reconnecting: boolean) => void
+  ): () => void {
     return relayClient.onConnectionChange(callback);
   }
 

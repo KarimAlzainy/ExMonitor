@@ -342,9 +342,15 @@ export const SensorPage: React.FC = () => {
               )}
             </div>
 
-            <p className="mt-3 text-center font-mono text-[16px] font-medium tracking-wide text-ink-100">
-              {sensorId}
-            </p>
+            <div className="mt-3 rounded-lg border border-white/[0.08] bg-space-850 px-3 py-3 text-center">
+              <p className="text-[11.5px] uppercase tracking-wide text-ink-500">Sensor code</p>
+              <p className="mt-1 select-all break-all font-mono text-[26px] font-semibold leading-8 tracking-[0.08em] text-ink-100 sm:text-[30px]">
+                {sensorId}
+              </p>
+              <p className="mt-1 text-[11.5px] leading-4 text-ink-500">
+                Type this into the console under Settings, or scan the square above.
+              </p>
+            </div>
 
             <div className="mt-3 flex gap-2">
               <button

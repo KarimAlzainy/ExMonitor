@@ -43,9 +43,11 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
   const link =
     crewLinkMode === 'relay'
       ? { dot: 'bg-positive', text: 'Crew link' }
-      : crewLinkMode === 'local'
-        ? { dot: 'bg-caution', text: 'This browser' }
-        : { dot: 'bg-ink-500', text: 'Offline' };
+      : crewLinkMode === 'reconnecting'
+        ? { dot: 'bg-caution', text: 'Reconnecting' }
+        : crewLinkMode === 'local'
+          ? { dot: 'bg-caution', text: 'This browser' }
+          : { dot: 'bg-ink-500', text: 'Offline' };
 
   const sensorLabel =
     sensorStatus === 'connected'

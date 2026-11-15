@@ -96,7 +96,14 @@ export const EmergencyOverlay: React.FC = () => {
             too, or the sender cancels it.
           </p>
           <p className="mt-1 text-center text-[11.5px] leading-5 text-ink-500">
-            Crew link: {crewLinkMode === 'relay' ? 'relay connected' : crewLinkMode === 'local' ? 'this browser only' : 'offline'}
+            Crew link:{' '}
+            {crewLinkMode === 'relay'
+              ? 'relay connected'
+              : crewLinkMode === 'reconnecting'
+                ? 'reconnecting'
+                : crewLinkMode === 'local'
+                  ? 'this browser only'
+                  : 'offline'}
           </p>
         </div>
       </section>

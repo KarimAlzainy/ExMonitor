@@ -393,13 +393,31 @@ function openBrowser(url) {
 
 function ready(port) {
   const localUrl = `http://localhost:${port}`;
+  const addresses = lanAddresses();
   console.log('');
-  console.log('  ExMonitor crew link relay');
-  console.log(`  Console     ${localUrl}`);
-  console.log(`  Sensors     ${localUrl}/sensors.html`);
-  console.log(`  Relay       ws://localhost:${port}/relay`);
-  for (const address of lanAddresses()) {
-    console.log(`  On network  http://${address}:${port}`);
+  console.log('  ExMonitor');
+  console.log('');
+  console.log('  On this computer');
+  console.log(`    Console      ${localUrl}`);
+  console.log(`    Sensor page  ${localUrl}/sensors.html`);
+  console.log(`    Relay        ws://localhost:${port}/relay`);
+  if (addresses.length) {
+    console.log('');
+    console.log('  On a phone or second screen on the same Wi-Fi');
+    for (const address of addresses) {
+      const base = `http://${address}:${port}`;
+      console.log(`    Console      ${base}`);
+      console.log(`    Sensor page  ${base}/sensors.html`);
+      console.log(`    Sensor URL   ${base}/sensors.html?sensor=YOUR-CODE`);
+    }
+    console.log('');
+    console.log('  The sensor page shows its own code in large text. Open Settings in the');
+    console.log('  console and scan the code, or type it in. The Sensor URL above is the');
+    console.log('  page to open; replace YOUR-CODE with the code shown there to skip typing.');
+  } else {
+    console.log('');
+    console.log('  No network address was found. Connect this computer to Wi-Fi or a');
+    console.log('  hotspot to use a phone as the sensor.');
   }
   if (!appDir) {
     console.log('');

@@ -214,9 +214,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
   const linkText =
     crewLinkMode === 'relay'
       ? 'Connected through the local relay'
-      : crewLinkMode === 'local'
-        ? 'This browser only'
-        : 'Not connected';
+      : crewLinkMode === 'reconnecting'
+        ? 'Relay lost, reconnecting…'
+        : crewLinkMode === 'local'
+          ? 'This browser only'
+          : 'Not connected';
 
   const selected = modelOption(aiModelTier);
 

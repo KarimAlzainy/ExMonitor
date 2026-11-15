@@ -8,7 +8,12 @@ export interface RelayEnvelope {
 }
 
 type RelayListener = (message: RelayEnvelope) => void;
-type ConnectionListener = (relayOnline: boolean, localChannel: boolean) => void;
+/**
+ * relayOnline  - the shared relay socket is open.
+ * localChannel - a BroadcastChannel is available, so two tabs still talk.
+ * reconnecting - the relay was reachable before and the client is retrying.
+ */
+type ConnectionListener = (relayOnline: boolean, localChannel: boolean, reconnecting: boolean) => void;
 
 const PROTOCOL = 'exmonitor/1';
 const CHANNEL_NAME = 'exmonitor.crew-link.v1';
@@ -48,6 +53,9 @@ class RelayClient {
   private reconnectTimer: number | null = null;
   private reconnectDelay = 2000;
   private relayOnline = false;
+  private relayReconnecting = false;
+  private everConnected = false;
+  private lastNotifyKey = '';
   private disposed = false;
 
   constructor() {
@@ -87,7 +95,7 @@ class RelayClient {
 
   public onConnectionChange(callback: ConnectionListener): () => void {
     this.connectionListeners.add(callback);
-    callback(this.relayOnline, Boolean(this.channel));
+    callback(this.relayOnline, Boolean(this.channel), this.relayReconnecting);
     return () => {
       this.connectionListeners.delete(callback);
     };
@@ -156,7 +164,10 @@ class RelayClient {
 
       socket.onopen = () => {
         this.reconnectDelay = 2000;
-        this.setRelayState(true);
+        this.everConnected = true;
+        this.relayOnline = true;
+        this.relayReconnecting = false;
+        this.notify();
       };
 
       socket.onmessage = (event) => {
@@ -169,15 +180,21 @@ class RelayClient {
 
       socket.onclose = () => {
         if (this.ws === socket) this.ws = null;
-        this.setRelayState(false);
+        this.relayOnline = false;
+        this.relayReconnecting = this.everConnected;
+        this.notify();
         this.scheduleReconnect();
       };
 
       socket.onerror = () => {
-        this.setRelayState(false);
+        this.relayOnline = false;
+        this.relayReconnecting = this.everConnected;
+        this.notify();
       };
     } catch {
-      this.setRelayState(false);
+      this.relayOnline = false;
+      this.relayReconnecting = this.everConnected;
+      this.notify();
       this.scheduleReconnect();
     }
   }
@@ -197,12 +214,13 @@ class RelayClient {
     }
   };
 
-  private setRelayState(online: boolean): void {
-    if (this.relayOnline === online) return;
-    this.relayOnline = online;
+  private notify(): void {
+    const key = `${this.relayOnline}|${this.relayReconnecting}|${Boolean(this.channel)}`;
+    if (this.lastNotifyKey === key) return;
+    this.lastNotifyKey = key;
     this.connectionListeners.forEach((callback) => {
       try {
-        callback(online, Boolean(this.channel));
+        callback(this.relayOnline, Boolean(this.channel), this.relayReconnecting);
       } catch {
         // A broken listener must not stop the transport.
       }
