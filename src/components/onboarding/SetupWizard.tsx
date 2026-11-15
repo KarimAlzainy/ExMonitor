@@ -126,7 +126,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
       <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-4 py-5 sm:px-6 sm:py-8">
         <header className="flex items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
           <div>
-            <p className="text-[16px] font-semibold leading-5 tracking-tight text-ink-100">Ex-Monitor</p>
+            <p className="text-[16px] font-semibold leading-5 tracking-tight text-ink-100">ExMonitor</p>
             <p className="mt-0.5 text-[12px] text-ink-500">Crew health console</p>
           </div>
           <div className="flex items-center gap-3">
@@ -325,7 +325,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialProfile, onComp
                   icon={Bell}
                   kicker="Third, alerts"
                   title="Choose how alerts reach you"
-                  text="When another crew device sends an emergency alert, this device can show a system notification as well as the full-screen alert. Browsers only deliver it while Ex-Monitor is open or installed."
+                  text="When another crew device sends an emergency alert, this device can show a system notification as well as the full-screen alert. Browsers only deliver it while ExMonitor is open or installed."
                 />
                 <div className="mt-6 space-y-3">
                   <div className="rounded-xl border border-white/[0.08] bg-space-900 p-5">

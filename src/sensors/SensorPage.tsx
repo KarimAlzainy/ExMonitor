@@ -295,7 +295,7 @@ export const SensorPage: React.FC = () => {
               <Radio className="h-4 w-4" strokeWidth={1.6} />
             </span>
             <div>
-              <p className="text-[15px] font-semibold leading-5 tracking-tight text-ink-100">Ex-Monitor sensors</p>
+              <p className="text-[15px] font-semibold leading-5 tracking-tight text-ink-100">ExMonitor sensors</p>
               <p className="text-[12px] leading-4 text-ink-500">Pretend body sensor · realistic readings</p>
             </div>
           </div>

@@ -8,7 +8,7 @@ const STEPS = [
   'Open the sensor page on a phone or a second screen. The console shows its code; scan it in Settings, or type the code by hand. You can skip this and use practice readings.',
   'On the sensor page, choose a situation: rest, exercise, low oxygen, radiation storm or recovery. The page sends realistic heart, oxygen, temperature, stress and radiation readings.',
   'In Live readings, watch the heart trace and the five vital cards change. The rules engine marks readings as normal, watch or critical.',
-  'Ask the flight surgeon about a symptom. The current readings travel with the question. With AI selected, the model downloads once and then answers on this device.',
+  'Ask the AI assistant about a symptom. In Doctor mode the current readings travel with the question. With a model selected, the model downloads once and then answers on this device, or you can point it at a local Ollama server.',
   'Press Send alert. Other consoles show a full-screen emergency until each one acknowledges it. The sender only sees a small panel with a cancel button.',
   'Cancel from the sender panel to clear the alert on every screen. Otherwise it stays until each crew member acknowledges it.'
 ];

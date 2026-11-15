@@ -1,6 +1,6 @@
 import type { MLCEngineInterface } from '@mlc-ai/web-llm';
 import { AiModelTier, CrewProfile, VitalsData } from '../types/telemetry';
-import { buildFlightSurgeonMessages, modelOption } from './aiModels';
+import { ChatMode, buildChatMessages, modelOption } from './aiModels';
 
 export interface EngineProgress {
   progress: number;
@@ -237,7 +237,8 @@ export async function prepareModel(
 
 export async function askFlightSurgeon(
   payload: AskPayload,
-  onToken: (token: string) => void
+  onToken: (token: string) => void,
+  mode: ChatMode = 'doctor'
 ): Promise<string> {
   if (!engine) throw new Error('The model is not ready yet.');
 
@@ -247,7 +248,7 @@ export async function askFlightSurgeon(
     // Older engine builds may not expose resetChat.
   }
 
-  const messages = buildFlightSurgeonMessages(payload);
+  const messages = buildChatMessages(payload, mode);
   const completion = await engine.chat.completions.create({
     messages,
     stream: true,

@@ -42,14 +42,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view downloads >/dev/null 2>&1 ||
-            gh release create downloads --title "Ex-Monitor downloads" \
+            gh release create downloads --title "ExMonitor downloads" \
               --notes "The newest ZIPs, one per assistant and system. Each contains exactly one start file."
+          # Remove files from the release that this build no longer produces, so a
+          # renamed ZIP does not leave the old one behind next to it.
+          while read -r asset; do
+            [ -z "$asset" ] && continue
+            [ -f "bundles/$asset" ] || gh release delete-asset downloads "$asset" --yes
+          done < <(gh release view downloads --json assets --jq '.assets[].name')
           gh release upload downloads bundles/*.zip --clobber
 
       - name: Keep the ZIPs as a workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ex-monitor-zips
+          name: ExMonitor-zips
           path: bundles/*.zip
           retention-days: 14
 

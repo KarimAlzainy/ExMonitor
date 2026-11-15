@@ -1,11 +1,11 @@
 import React from 'react';
-import { Activity, BookOpen, LucideIcon, Settings, Stethoscope } from 'lucide-react';
+import { Activity, BookOpen, Bot, LucideIcon, Settings } from 'lucide-react';
 
 export type AppTab = 'telemetry' | 'surgeon' | 'settings' | 'lab';
 
 const TABS: { id: AppTab; label: string; shortLabel: string; icon: LucideIcon }[] = [
   { id: 'telemetry', label: 'Live readings', shortLabel: 'Readings', icon: Activity },
-  { id: 'surgeon', label: 'Flight surgeon', shortLabel: 'Surgeon', icon: Stethoscope },
+  { id: 'surgeon', label: 'AI assistant', shortLabel: 'Assistant', icon: Bot },
   { id: 'settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
   { id: 'lab', label: 'How it works', shortLabel: 'Guide', icon: BookOpen }
 ];

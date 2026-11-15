@@ -186,7 +186,7 @@ export const NASA_SYMPTOM_PROTOCOLS: SymptomRuleCard[] = [
           'Cease all physical activity immediately and anchor in place.',
           'Open medical pack: Prepare Aspirin 325mg chewable + Nitroglycerin sublingual spray if systolic pressure allows.',
           'Verify suit cooling flow (LCVG) to reduce cardiac workload.',
-          'Notify Flight Surgeon & request immediate secondary crew observation.'
+          'Notify mission medical support & request immediate secondary crew observation.'
         ],
         nasaCode: 'NASA Flight Rule MED-10.4 (Cardiac Emergencies)'
       };

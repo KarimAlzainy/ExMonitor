@@ -26,8 +26,8 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         id: base,
-        name: 'Ex-Monitor - Crew Health Console',
-        short_name: 'Ex-Monitor',
+        name: 'ExMonitor - Crew Health Console',
+        short_name: 'ExMonitor',
         description: 'Offline-first crew health console with a separate pretend sensor page and on-device assistant',
         theme_color: '#08090c',
         background_color: '#08090c',

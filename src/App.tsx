@@ -19,21 +19,32 @@ import {
 
 const AppShell: React.FC<{ onRunSetup: () => void }> = ({ onRunSetup }) => {
   const [tab, setTab] = useState<AppTab>('telemetry');
+  // The assistant fills the window and scrolls inside its own message list, so
+  // the page around it does not move.
+  const fillsWindow = tab === 'surgeon';
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [tab]);
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-space-950 text-ink-100">
+    <div
+      className={`bg-space-950 text-ink-100 ${
+        fillsWindow ? 'flex h-[100dvh] flex-col overflow-hidden' : 'min-h-screen overflow-x-clip'
+      }`}
+    >
       <Header activeTab={tab} onTabChange={setTab} />
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main
+        className={`mx-auto w-full max-w-6xl px-4 sm:px-6 ${
+          fillsWindow ? 'flex min-h-0 flex-1 flex-col py-4 sm:py-5' : 'py-6 sm:py-8'
+        }`}
+      >
         {tab === 'telemetry' && <DashboardTab />}
         {tab === 'surgeon' && <AiCopilotTab />}
         {tab === 'settings' && <SettingsTab onRunSetup={onRunSetup} />}
         {tab === 'lab' && <GuideTab />}
       </main>
-      <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-8 pt-2 text-[12px] text-ink-500 sm:px-6">
+      <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-6 pt-2 text-[12px] text-ink-500 sm:px-6">
         <span>NASA Space Apps Challenge · MR092L / MEDB 5.2 · Earth delay up to 22 min</span>
         <a
           href="sensors.html"
@@ -66,7 +77,7 @@ class TelemetryErrorBoundary extends React.Component<{ children: React.ReactNode
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('Ex-Monitor render failure:', error, info.componentStack);
+    console.error('ExMonitor render failure:', error, info.componentStack);
   }
 
   render() {

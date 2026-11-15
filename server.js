@@ -7,7 +7,7 @@ import { exec } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Ex-Monitor launcher.
+ * ExMonitor launcher.
  *
  * One file, no npm packages. It serves the built app (./app when packaged,
  * ./dist in the repository) and runs the crew-link relay at /relay on the
@@ -27,7 +27,7 @@ const noOpen = argv.includes('--no-open') || relayOnly;
 const nodeMajor = Number(process.versions.node.split('.')[0]);
 if (!Number.isFinite(nodeMajor) || nodeMajor < 18) {
   console.error('');
-  console.error('  Ex-Monitor needs Node.js 18 or newer.');
+  console.error('  ExMonitor needs Node.js 18 or newer.');
   console.error(`  This copy is Node ${process.versions.node}. Install a newer one from https://nodejs.org`);
   console.error('');
   process.exit(1);
@@ -80,7 +80,7 @@ function serveApp(req, res) {
       res,
       503,
       [
-        'Ex-Monitor has not been built yet.',
+        'ExMonitor has not been built yet.',
         '',
         'In the project folder run:',
         '  npm install',
@@ -152,7 +152,7 @@ const server = http.createServer((req, res) => {
       res,
       200,
       JSON.stringify({
-        service: 'Ex-Monitor crew link relay',
+        service: 'ExMonitor crew link relay',
         status: 'online',
         app: Boolean(appDir),
         clients: clients.size,
@@ -172,7 +172,7 @@ const server = http.createServer((req, res) => {
     sendText(
       res,
       200,
-      'Ex-Monitor relay is running. The app is served by the Vite dev server during development.'
+      'ExMonitor relay is running. The app is served by the Vite dev server during development.'
     );
     return;
   }
@@ -394,7 +394,7 @@ function openBrowser(url) {
 function ready(port) {
   const localUrl = `http://localhost:${port}`;
   console.log('');
-  console.log('  Ex-Monitor crew link relay');
+  console.log('  ExMonitor crew link relay');
   console.log(`  Console     ${localUrl}`);
   console.log(`  Sensors     ${localUrl}/sensors.html`);
   console.log(`  Relay       ws://localhost:${port}/relay`);

@@ -61,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex h-16 items-center gap-3">
           <div className="min-w-0 shrink-0">
-            <p className="text-[17px] font-semibold leading-5 tracking-tight text-ink-100">Ex-Monitor</p>
+            <p className="text-[17px] font-semibold leading-5 tracking-tight text-ink-100">ExMonitor</p>
             <p className="truncate text-[12px] leading-4 text-ink-400">Crew health console</p>
           </div>
 

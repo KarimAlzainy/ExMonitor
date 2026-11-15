@@ -2,28 +2,28 @@ const MODELS = [
   {
     id: 'phi3',
     name: 'Phi-3.5 mini',
-    file: 'ex-monitor-phi3',
+    file: 'exmonitor-phi3',
     download: 'about 2.1 GB',
     note: 'The strongest answers. Best on a recent laptop with 8 GB of memory or more.'
   },
   {
     id: 'llama3',
     name: 'Llama 3.2 3B',
-    file: 'ex-monitor-llama3',
+    file: 'exmonitor-llama3',
     download: 'about 1.8 GB',
     note: 'A balance of speed and detail. Works on most recent laptops.'
   },
   {
     id: 'gemma2',
     name: 'Gemma 2 2B',
-    file: 'ex-monitor-gemma2',
+    file: 'exmonitor-gemma2',
     download: 'about 1.5 GB',
     note: 'The smallest AI download. Best when the device has limited memory.'
   },
   {
     id: 'none',
     name: 'No AI',
-    file: 'ex-monitor-no-ai',
+    file: 'exmonitor-no-ai',
     download: 'nothing',
     note: 'Written NASA action cards only. Works on every device and never needs the internet.'
   }
@@ -178,7 +178,7 @@ function updateDownload() {
 
   if (openButton) {
     openButton.href = `/app/?model=${model.id}`;
-    openButton.textContent = state.phone ? 'Open Ex-Monitor now' : 'Open in this browser';
+    openButton.textContent = state.phone ? 'Open ExMonitor now' : 'Open in this browser';
     openButton.classList.toggle('button-primary', state.phone);
     openButton.classList.toggle('button-quiet', !state.phone);
   }

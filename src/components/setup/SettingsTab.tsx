@@ -348,7 +348,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
       <Section
         icon={Bell}
         title="Emergency alerts"
-        note="Another crew device can show a system notification as well as the full-screen alert. Browsers only deliver it while Ex-Monitor is open or installed."
+        note="Another crew device can show a system notification as well as the full-screen alert. Browsers only deliver it while ExMonitor is open or installed."
       >
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-white/[0.06] bg-space-950 p-4">
@@ -615,7 +615,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onRunSetup }) => {
 
         {aiModelTier === 'none' && (
           <p className="mt-3 text-[12px] leading-5 text-ink-500">
-            No model will download. The flight surgeon uses the written NASA action cards and the rules engine.
+            No model will download. The AI assistant uses the written NASA action cards and the rules engine.
           </p>
         )}
       </Section>

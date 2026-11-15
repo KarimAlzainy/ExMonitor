@@ -1,4 +1,4 @@
-# Ex-Monitor
+# ExMonitor
 
 A crew health console for a training simulation. It shows live body readings, sends crew alerts across the
 local network, and can answer questions with a language model that runs entirely in the browser.
@@ -10,7 +10,7 @@ No account, no cloud service and no separate AI runtime. It opens directly in a 
 
 | Piece | What it does |
 | --- | --- |
-| **Console** (`/`) | Heart trace, five vital cards, the written NASA rules, the flight surgeon and crew alerts. |
+| **Console** (`/`) | Heart trace, five vital cards, the written NASA rules, the AI assistant and crew alerts. |
 | **Sensor page** (`/sensors.html`) | Turns a phone or second screen into a pretend body sensor. It streams realistic readings eight times a second. |
 | **Crew link** (`/relay`) | A small WebSocket relay inside the launcher, or a Durable Object on the hosted copy. It carries alerts, presence and sensor frames between devices. |
 
@@ -55,9 +55,9 @@ model in Settings if the phone supports WebGPU. The AI weights download to each 
 The download page offers one ZIP per assistant and per operating system. Each ZIP contains exactly one start
 file, so there is nothing to choose:
 
-- Windows: double-click `Start Ex-Monitor.cmd`
-- macOS: double-click `Start Ex-Monitor.command`
-- Linux: run `./start-ex-monitor.sh`
+- Windows: double-click `Start ExMonitor.cmd`
+- macOS: double-click `Start ExMonitor.command`
+- Linux: run `./start-exmonitor.sh`
 
 The launcher finds a free port, serves the app and the relay from one address, and opens the browser.
 Nothing is installed into the system.
@@ -65,21 +65,35 @@ Nothing is installed into the system.
 Each ZIP contains the latest built app plus `app/model-config.json`, which selects the assistant that was
 chosen on the download page.
 
-## The assistant
+## The AI assistant
 
-The flight surgeon uses one of four choices:
+The assistant answers in two modes:
 
-- **Phi-3.5 mini** — strongest answers, about 2.1 GB on first use.
-- **Llama 3.2 3B** — balanced, about 1.8 GB.
-- **Gemma 2 2B** — smallest, about 1.5 GB.
-- **No AI** — written NASA action cards only, nothing to download.
+- **Doctor mode** (the default) attaches the medical prompt and the current readings to each question.
+- **Assistant mode** is plain chat: no prompt and no readings.
 
-AI answers come from [WebLLM](https://github.com/mlc-ai/web-llm) running in a worker with WebGPU. The model
-is downloaded once from Hugging Face, cached by the browser, and then works offline. Nothing is sent to a
-server. Without WebGPU, or if a download fails, the console falls back to the written rules.
+Answers can come from either of two sources, chosen on the assistant screen:
 
-The model tier is saved in `localStorage`. A new bundle carries a build stamp, so a freshly downloaded ZIP
-selects its own assistant once; a choice made later in Settings is kept.
+- **On-device** — one of four choices:
+  - **Phi-3.5 mini** — strongest answers, about 2.1 GB on first use.
+  - **Llama 3.2 3B** — balanced, about 1.8 GB.
+  - **Gemma 2 2B** — smallest, about 1.5 GB.
+  - **No AI** — written NASA action cards only, nothing to download.
+- **Ollama** — a model already installed on this computer, such as the one pulled with `ollama pull phi3`.
+  Set the server address (default `http://localhost:11434`) and the model name (default `phi3`) on the
+  assistant screen. There is no download and no graphics-memory requirement.
+
+On-device answers come from [WebLLM](https://github.com/mlc-ai/web-llm) running in a worker with WebGPU. The
+model is downloaded once from Hugging Face, cached by the browser, and then works offline. Nothing is sent to a
+server. Without WebGPU, or if a download fails, Doctor mode falls back to the written rules.
+
+Ollama answers stay on this computer too. The browser has to be allowed to reach the server: start Ollama with
+`OLLAMA_ORIGINS` set to this page's address, for example `OLLAMA_ORIGINS=* ollama serve`. This is only needed
+when the page and Ollama are on different addresses, such as the hosted copy.
+
+The chosen source and the chat mode are saved in `localStorage`. The model tier is saved the same way. A new
+bundle carries a build stamp, so a freshly downloaded ZIP selects its own assistant once; a choice made later in
+Settings is kept.
 
 ## Alerts
 
@@ -181,7 +195,7 @@ the ZIPs and skips the page deploy, so a push always leaves working downloads be
 src/
   components/
     dashboard/    Heart trace, vital cards and radiation card
-    ai/           Flight surgeon chat, model download and rules fallback
+    ai/           AI assistant chat, model download, Ollama and rules fallback
     setup/        Settings page, sensor scanner
     onboarding/   First-run wizard
     emergency/    Receiver overlay and sender panel
@@ -202,7 +216,7 @@ worker/           Cloudflare Worker: landing page, ZIPs and the crew link room
 - The sensor page sends pretend readings. It is not a medical device and does not read a real body sensor.
 - The ECG shape is generated from the simulated heart rate; it is not a measurement.
 - AI answers can be wrong. The written NASA action cards stay available on every copy.
-- This is a training simulation. It does not replace a real flight surgeon or mission medical rules.
+- This is a training simulation. It does not replace real medical care or mission medical rules.
 
 ## References
 

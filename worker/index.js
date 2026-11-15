@@ -45,7 +45,7 @@ export default {
       }
 
       return Response.json({
-        service: 'Ex-Monitor crew link relay',
+        service: 'ExMonitor crew link relay',
         status: 'online',
         app: true,
         hosted: true,

@@ -1,22 +1,32 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity,
+  Bot,
   Cpu,
   Flame,
   HeartPulse,
   Loader2,
   LucideIcon,
   Radiation,
+  RefreshCw,
   Send,
+  Server,
   Wind,
   X
 } from 'lucide-react';
 import { ChatMessage } from '../../types/telemetry';
 import { NASA_SYMPTOM_PROTOCOLS, SymptomRuleCard } from '../../services/nasaRules';
 import {
+  AiProvider,
+  ChatMode,
+  buildChatMessages,
   buildRulesAnswer,
   modelName,
+  readChatMode,
+  readProvider,
   recommendationReason,
+  storeChatMode,
+  storeProvider,
   streamRulesAnswer
 } from '../../services/aiModels';
 import {
@@ -26,6 +36,13 @@ import {
   isModelReady,
   prepareModel
 } from '../../services/flightSurgeon';
+import {
+  OllamaConfig,
+  askOllama,
+  listOllamaModels,
+  readOllamaConfig,
+  storeOllamaConfig
+} from '../../services/ollama';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { InfoTip } from '../ui/InfoTip';
 
@@ -89,12 +106,12 @@ function RichLine({ text }: { text: string }) {
 
 function RichText({ text }: { text: string }) {
   return (
-    <div className="space-y-1.5 text-[14px] leading-5 text-ink-300">
+    <div className="space-y-1.5 text-[14px] leading-5 text-ink-200">
       {text.split('\n').map((line, index) => {
-        if (!line.trim()) return <div key={index} className="h-2" />;
+        if (!line.trim()) return <div key={index} className="h-1.5" />;
         if (line.startsWith('### ')) {
           return (
-            <h4 key={index} className="pt-2 text-[14px] font-medium text-ink-100 first:pt-0">
+            <h4 key={index} className="pt-1.5 text-[13.5px] font-medium text-ink-100 first:pt-0">
               {line.replace(/^###\s*/, '').replace(/[#*]/g, '')}
             </h4>
           );
@@ -119,8 +136,49 @@ function RichText({ text }: { text: string }) {
   );
 }
 
+const Segmented: React.FC<{
+  value: string;
+  options: { id: string; label: string; icon?: LucideIcon }[];
+  onChange: (id: string) => void;
+  label: string;
+}> = ({ value, options, onChange, label }) => (
+  <div
+    role="group"
+    aria-label={label}
+    className="flex items-center gap-0.5 rounded-lg border border-white/[0.08] bg-space-950 p-0.5"
+  >
+    {options.map((option) => {
+      const Icon = option.icon;
+      const selected = option.id === value;
+      return (
+        <button
+          key={option.id}
+          type="button"
+          aria-pressed={selected}
+          onClick={() => onChange(option.id)}
+          className={`flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium transition-colors ${
+            selected ? 'bg-chalk text-space-950' : 'text-ink-400 hover:text-ink-100'
+          }`}
+        >
+          {Icon && <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />}
+          {option.label}
+        </button>
+      );
+    })}
+  </div>
+);
+
 export const AiCopilotTab: React.FC = () => {
   const { vitals, profile, aiModelTier, setAiModelTier, diagnostic, runHardwareDiagnostic } = useTelemetry();
+
+  const [provider, setProvider] = useState<AiProvider>(() => readProvider());
+  const [chatMode, setChatMode] = useState<ChatMode>(() => readChatMode());
+  const [ollama, setOllama] = useState<OllamaConfig>(() => readOllamaConfig());
+  const [ollamaStatus, setOllamaStatus] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
+  const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+  const [ollamaMessage, setOllamaMessage] = useState('');
+  const [showServer, setShowServer] = useState(false);
+
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(false);
@@ -134,14 +192,29 @@ export const AiCopilotTab: React.FC = () => {
     {
       id: 'welcome',
       sender: 'system',
-      text: 'The on-board assistant is standing by. Every question carries the current readings. Earth is up to 22 minutes away, so the answer is prepared on this device.',
+      text:
+        'The AI assistant is standing by. Doctor mode attaches the prompt and the live readings to each question. ' +
+        'Assistant mode is plain chat. Ask about a symptom, or just talk.',
       timestamp: Date.now()
     }
   ]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  const rulesMode = aiModelTier === 'none';
+  const rulesMode = provider === 'ondevice' && aiModelTier === 'none';
+  const doctorMode = chatMode === 'doctor';
   const tierName = modelName(aiModelTier);
+
+  useEffect(() => {
+    storeProvider(provider);
+  }, [provider]);
+
+  useEffect(() => {
+    storeChatMode(chatMode);
+  }, [chatMode]);
+
+  useEffect(() => {
+    storeOllamaConfig(ollama);
+  }, [ollama]);
 
   useEffect(() => {
     setModelReady(isModelReady(aiModelTier));
@@ -155,21 +228,60 @@ export const AiCopilotTab: React.FC = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  const subtitle = rulesMode
-    ? 'Written NASA action cards and the rules engine. No language model is used.'
-    : preparing
-      ? `Downloading and preparing ${tierName}. This happens once.`
-      : modelReady
-        ? `${tierName} is loaded on this device and answers with the live readings attached.`
-        : `${tierName} is selected. The first question downloads it once, then it works offline.`;
+  const checkOllama = useCallback(async () => {
+    setOllamaStatus('checking');
+    setOllamaMessage('');
+    try {
+      const models = await listOllamaModels(ollama.url);
+      setOllamaModels(models);
+      setOllamaStatus('ok');
+      setOllamaMessage(
+        models.length
+          ? `Connected. ${models.length} model(s) available.`
+          : 'Connected, but no model is installed yet. Run: ollama pull phi3'
+      );
+    } catch (error) {
+      setOllamaModels([]);
+      setOllamaStatus('error');
+      setOllamaMessage(error instanceof Error ? error.message : 'The Ollama check failed.');
+    }
+  }, [ollama.url]);
 
-  const modelState = rulesMode
-    ? { dot: 'bg-ink-400', label: 'Rules only' }
-    : preparing
-      ? { dot: 'bg-caution', label: 'Preparing model' }
-      : modelReady
-        ? { dot: 'bg-positive', label: 'Model on device' }
-        : { dot: 'bg-ink-500', label: 'Not loaded' };
+  useEffect(() => {
+    if (provider === 'ollama') void checkOllama();
+  }, [provider, checkOllama]);
+
+  const subtitle = [
+    provider === 'ollama'
+      ? `Answers come from the local Ollama model "${ollama.model}". No browser download and no graphics memory needed.`
+      : rulesMode
+        ? 'Written NASA action cards and the rules engine. No language model is used.'
+        : preparing
+          ? `Downloading and preparing ${tierName}. This happens once.`
+          : modelReady
+            ? `${tierName} is loaded on this device.`
+            : `${tierName} is selected. The first question downloads it once, then it works offline.`,
+    doctorMode
+      ? 'Doctor mode carries the prompt and the live readings with each question.'
+      : 'Assistant mode is plain chat: no prompt and no readings.'
+  ].join(' ');
+
+  const modelState =
+    provider === 'ollama'
+      ? ollamaStatus === 'checking'
+        ? { dot: 'bg-caution', label: 'Checking the Ollama server' }
+        : ollamaStatus === 'ok'
+          ? { dot: 'bg-positive', label: `Ollama · ${ollama.model}` }
+          : ollamaStatus === 'error'
+            ? { dot: 'bg-critical', label: 'Ollama server unreachable' }
+            : { dot: 'bg-ink-500', label: 'Ollama not checked' }
+      : rulesMode
+        ? { dot: 'bg-ink-400', label: 'Rules only' }
+        : preparing
+          ? { dot: 'bg-caution', label: 'Preparing model' }
+          : modelReady
+            ? { dot: 'bg-positive', label: `On-device · ${tierName}` }
+            : { dot: 'bg-ink-500', label: `On-device · ${tierName} not loaded` };
 
   const pushUser = (text: string) => {
     const message: UiMessage = {
@@ -177,9 +289,19 @@ export const AiCopilotTab: React.FC = () => {
       sender: 'astronaut',
       text,
       timestamp: Date.now(),
-      vitalsSnapshot: { ...vitals }
+      ...(doctorMode ? { vitalsSnapshot: { ...vitals } } : {})
     };
     setMessages((previous) => [...previous, message]);
+  };
+
+  const appendToken = (id: string, token: string) => {
+    setMessages((previous) =>
+      previous.map((message) => (message.id === id ? { ...message, text: message.text + token } : message))
+    );
+  };
+
+  const setReplyText = (id: string, text: string) => {
+    setMessages((previous) => previous.map((message) => (message.id === id ? { ...message, text } : message)));
   };
 
   const ensureModel = async (): Promise<boolean> => {
@@ -209,9 +331,7 @@ export const AiCopilotTab: React.FC = () => {
         return false;
       }
       console.warn('The on-device model could not start.', error);
-      setPrepareError(
-        'The model could not start on this device. The written NASA rules are being used instead.'
-      );
+      setPrepareError('The model could not start on this device.');
       setModelReady(false);
       return false;
     } finally {
@@ -228,7 +348,7 @@ export const AiCopilotTab: React.FC = () => {
   };
 
   const downloadNow = async () => {
-    if (aiModelTier === 'none' || preparing) return;
+    if (rulesMode || preparing) return;
     const ready = await ensureModel();
     if (ready) setPrepareNotice('Model ready on this device.');
   };
@@ -246,16 +366,10 @@ export const AiCopilotTab: React.FC = () => {
           }
         : undefined
     );
-    await streamRulesAnswer(text, (token) => {
-      setMessages((previous) =>
-        previous.map((message) =>
-          message.id === replyId ? { ...message, text: message.text + token } : message
-        )
-      );
-    });
+    await streamRulesAnswer(text, (token) => appendToken(replyId, token));
   };
 
-  const askSurgeon = async (query: string) => {
+  const ask = async (query: string) => {
     const trimmed = query.trim();
     if (!trimmed || busy || preparing) return;
 
@@ -264,52 +378,79 @@ export const AiCopilotTab: React.FC = () => {
     setBusy(true);
 
     const replyId = `reply-${Date.now()}`;
+    const usingRules = provider === 'ondevice' && rulesMode;
     setMessages((previous) => [
       ...previous,
       {
         id: replyId,
-        sender: rulesMode ? 'system' : 'ai',
+        sender: usingRules ? 'system' : 'ai',
         text: '',
         timestamp: Date.now(),
         isStreaming: true,
-        vitalsSnapshot: { ...vitals, },
-        protocolBadge: rulesMode ? 'NASA rules' : 'Flight surgeon'
+        protocolBadge: usingRules ? 'NASA rules' : doctorMode ? 'Doctor mode' : 'Assistant'
       }
     ]);
 
+    const fallbackToRules = async () => {
+      await streamRules(replyId, trimmed, doctorMode ? matchProtocol(trimmed) : undefined);
+    };
+
     try {
-      if (rulesMode) {
-        await streamRules(replyId, trimmed, matchProtocol(trimmed));
+      if (usingRules) {
+        if (doctorMode) {
+          await fallbackToRules();
+        } else {
+          setReplyText(
+            replyId,
+            'Assistant mode needs a model. Choose one in Settings, or switch to Doctor mode for the written NASA rules.'
+          );
+        }
+        return;
+      }
+
+      if (provider === 'ollama') {
+        try {
+          await askOllama(
+            ollama,
+            buildChatMessages({ userQuery: trimmed, vitals: { ...vitals }, profile }, chatMode),
+            (token) => appendToken(replyId, token)
+          );
+        } catch (error) {
+          if (doctorMode) {
+            await fallbackToRules();
+          } else {
+            throw error;
+          }
+        }
         return;
       }
 
       const ready = await ensureModel();
       if (!ready) {
-        await streamRules(replyId, trimmed, matchProtocol(trimmed));
+        if (doctorMode) {
+          await fallbackToRules();
+        } else {
+          setReplyText(
+            replyId,
+            'The model could not start. Choose No AI and Doctor mode for the written rules, or point the assistant at a local Ollama server.'
+          );
+        }
         return;
       }
 
       await askFlightSurgeon(
         { userQuery: trimmed, vitals: { ...vitals }, profile },
-        (token) => {
-          setMessages((previous) =>
-            previous.map((message) =>
-              message.id === replyId ? { ...message, text: message.text + token } : message
-            )
-          );
-        }
+        (token) => appendToken(replyId, token),
+        chatMode
       );
     } catch (error) {
-      console.warn('The flight surgeon reply failed.', error);
+      console.warn('The assistant reply failed.', error);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'The assistant could not answer. Open a symptom card above for the written NASA steps.';
       setMessages((previous) =>
-        previous.map((message) =>
-          message.id === replyId && !message.text
-            ? {
-                ...message,
-                text: 'The assistant could not answer. Open one of the symptom cards above for the written NASA steps, or switch to No AI in Settings.'
-              }
-            : message
-        )
+        previous.map((entry) => (entry.id === replyId && !entry.text ? { ...entry, text: message } : entry))
       );
     } finally {
       setMessages((previous) =>
@@ -323,7 +464,8 @@ export const AiCopilotTab: React.FC = () => {
     const protocol = NASA_SYMPTOM_PROTOCOLS.find((card) => card.id === id);
     if (!protocol) return;
 
-    if (rulesMode) {
+    const plainRules = provider === 'ondevice' && rulesMode;
+    if (plainRules) {
       const evaluation = protocol.evaluate(vitals);
       setMessages((previous) => [
         ...previous,
@@ -340,75 +482,164 @@ export const AiCopilotTab: React.FC = () => {
           text: protocol.description,
           timestamp: Date.now(),
           protocolBadge: evaluation.nasaCode,
-          vitalsSnapshot: { ...vitals },
           actionCard: { ...evaluation, name: protocol.name, description: protocol.description }
         }
       ]);
       return;
     }
 
-    void askSurgeon(`${protocol.name}. ${protocol.description}`);
+    void ask(`${protocol.name}. ${protocol.description}`);
   };
 
   const roleLabel = (message: UiMessage) =>
     message.sender === 'astronaut'
       ? profile.name || 'Crew member'
       : message.sender === 'ai'
-        ? 'Flight surgeon'
+        ? 'AI assistant'
         : message.actionCard
           ? 'NASA action card'
-          : 'Flight console';
+          : 'Console';
 
   const suggested = diagnostic.recommendedModel;
   const checkingDevice = diagnostic.gpuTier === 'Checking this device';
   const showSuggestion =
+    provider === 'ondevice' &&
     !suggestionDismissed &&
     !checkingDevice &&
     suggested !== 'none' &&
     (rulesMode || (!modelReady && !preparing && aiModelTier !== suggested));
 
+  const modelMissingModel = provider === 'ondevice' && !checkingDevice && diagnostic.recommendedModel === 'none';
+
   return (
-    <div className="flex min-h-[70vh] flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-[18px] font-medium text-ink-100">
-            Flight surgeon
+            AI assistant
             <InfoTip
-              text="The assistant runs entirely in this browser. With AI selected, the model downloads once on first use and is then cached for offline use. The written NASA rules always work without it."
-              label="Flight surgeon"
+              text="Two ways to answer. On-device downloads a model once into this browser and then runs offline. Ollama uses a model already installed on this computer. Doctor mode attaches the medical prompt and the live readings; Assistant mode is plain chat."
+              label="AI assistant"
             />
           </h2>
-          <p className="mt-1 max-w-xl text-[13px] leading-5 text-ink-400">{subtitle}</p>
+          <p className="mt-1 max-w-2xl text-[13px] leading-5 text-ink-400">{subtitle}</p>
         </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <p className="flex items-center gap-1.5 text-[12px] text-ink-400">
-            <span className={`h-1.5 w-1.5 rounded-full ${modelState.dot}`} />
-            {modelState.label}
-          </p>
-          {!rulesMode && !modelReady && !preparing && (
-            <button
-              type="button"
-              onClick={() => void downloadNow()}
-              className="flex h-9 items-center rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
-            >
-              Download now
-            </button>
-          )}
-        </div>
+        <Segmented
+          label="Chat mode"
+          value={chatMode}
+          onChange={(id) => setChatMode(id as ChatMode)}
+          options={[
+            { id: 'doctor', label: 'Doctor mode', icon: HeartPulse },
+            { id: 'assistant', label: 'Assistant', icon: Bot }
+          ]}
+        />
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2 text-[12px] text-ink-400">
-        <span className="flex items-center gap-1.5 text-ink-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-positive" />
-          Live readings
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-ink-500">Answers from</span>
+        <Segmented
+          label="Answer source"
+          value={provider}
+          onChange={(id) => setProvider(id as AiProvider)}
+          options={[
+            { id: 'ondevice', label: 'On-device', icon: Cpu },
+            { id: 'ollama', label: 'Ollama', icon: Server }
+          ]}
+        />
+        <span className="flex items-center gap-1.5 text-[12px] text-ink-400">
+          <span className={`h-1.5 w-1.5 rounded-full ${modelState.dot}`} />
+          {modelState.label}
         </span>
-        <span className="font-mono tabular-nums">HR {vitals.heartRate} BPM</span>
-        <span className="font-mono tabular-nums">SpO2 {vitals.spO2}%</span>
-        <span className="font-mono tabular-nums">Temp {vitals.bodyTemp.toFixed(1)}°C</span>
-        <span className="font-mono tabular-nums">GSR {vitals.gsrStress.toFixed(1)} µS</span>
-        <span className="font-mono tabular-nums">Rad {vitals.radiationDoseRate.toFixed(2)} mSv/hr</span>
-        <span className="text-ink-400">{vitals.source === 'sensor' ? 'From the sensor' : 'Practice readings'}</span>
+        {provider === 'ondevice' && !rulesMode && !modelReady && !preparing && (
+          <button
+            type="button"
+            onClick={() => void downloadNow()}
+            className="flex h-8 items-center rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
+          >
+            Download now
+          </button>
+        )}
+        {provider === 'ollama' && (
+          <button
+            type="button"
+            onClick={() => setShowServer((value) => !value)}
+            className="ml-auto flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-300 transition-colors hover:border-white/15 hover:text-ink-100"
+          >
+            <Server className="h-3.5 w-3.5" strokeWidth={1.6} />
+            Server
+          </button>
+        )}
       </div>
+
+      {provider === 'ollama' && showServer && (
+        <div className="rounded-lg border border-white/[0.08] bg-space-900 p-3">
+          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <label className="block">
+              <span className="text-[11px] font-medium text-ink-300">Ollama server</span>
+              <input
+                value={ollama.url}
+                onChange={(event) => setOllama((current) => ({ ...current, url: event.target.value }))}
+                placeholder="http://localhost:11434"
+                className="mt-1 h-9 w-full rounded-lg border border-white/[0.08] bg-space-950 px-2.5 font-mono text-[12px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-medium text-ink-300">Model</span>
+              <input
+                value={ollama.model}
+                list="ollama-models"
+                onChange={(event) => setOllama((current) => ({ ...current, model: event.target.value }))}
+                placeholder="phi3"
+                className="mt-1 h-9 w-full rounded-lg border border-white/[0.08] bg-space-950 px-2.5 font-mono text-[12px] text-ink-100 outline-none placeholder:text-ink-500 focus:border-signal/50"
+              />
+              <datalist id="ollama-models">
+                {ollamaModels.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            </label>
+            <button
+              type="button"
+              onClick={() => void checkOllama()}
+              disabled={ollamaStatus === 'checking'}
+              className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-space-950 px-3 text-[12px] font-medium text-ink-200 transition-colors hover:border-white/15 disabled:opacity-50"
+            >
+              {ollamaStatus === 'checking' ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.8} />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.6} />
+              )}
+              Check
+            </button>
+          </div>
+          {ollamaMessage && (
+            <p
+              className={`mt-2 text-[11.5px] leading-5 ${
+                ollamaStatus === 'error' ? 'text-caution' : 'text-ink-400'
+              }`}
+            >
+              {ollamaMessage}
+            </p>
+          )}
+        </div>
+      )}
+
+      {doctorMode && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/[0.06] bg-space-900 px-3 py-2 text-[12px] text-ink-400">
+          <span className="flex items-center gap-1.5 text-ink-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-positive" />
+            Live readings
+          </span>
+          <span className="font-mono tabular-nums">HR {vitals.heartRate} BPM</span>
+          <span className="font-mono tabular-nums">SpO2 {vitals.spO2}%</span>
+          <span className="font-mono tabular-nums">Temp {vitals.bodyTemp.toFixed(1)}°C</span>
+          <span className="font-mono tabular-nums">GSR {vitals.gsrStress.toFixed(1)} μS</span>
+          <span className="font-mono tabular-nums">Rad {vitals.radiationDoseRate.toFixed(2)} mSv/hr</span>
+          <span className="text-ink-400">
+            {vitals.source === 'sensor' ? 'From the sensor' : 'Practice readings'}
+          </span>
+        </div>
+      )}
 
       {showSuggestion && (
         <div className="rounded-lg border border-signal/25 bg-signal/[0.04] px-4 py-3">
@@ -455,11 +686,11 @@ export const AiCopilotTab: React.FC = () => {
         </div>
       )}
 
-      {!checkingDevice && diagnostic.recommendedModel === 'none' && (
+      {modelMissingModel && (
         <div className="rounded-lg border border-white/[0.08] bg-space-900 px-4 py-3">
           <p className="text-[12px] leading-5 text-ink-400">
-            This browser cannot run the on-device model. The written NASA rules are active and need
-            no download.
+            This browser cannot run the on-device model. Doctor mode still uses the written NASA rules, and you can
+            point the assistant at a local Ollama server instead.
           </p>
           <button
             type="button"
@@ -509,51 +740,49 @@ export const AiCopilotTab: React.FC = () => {
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {QUICK_SYMPTOMS.map((symptom) => {
-          const Icon = symptom.icon;
-          return (
-            <button
-              key={symptom.id}
-              type="button"
-              disabled={busy || preparing}
-              onClick={() => onQuickSymptom(symptom.id)}
-              className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[13px] text-ink-300 transition-colors hover:border-white/15 hover:bg-space-850 hover:text-ink-100 disabled:opacity-40"
-            >
-              <Icon className="h-4 w-4 text-ink-500" strokeWidth={1.5} />
-              {symptom.label}
-            </button>
-          );
-        })}
-      </div>
+      {doctorMode && (
+        <div className="flex flex-wrap gap-2">
+          {QUICK_SYMPTOMS.map((symptom) => {
+            const Icon = symptom.icon;
+            return (
+              <button
+                key={symptom.id}
+                type="button"
+                disabled={busy || preparing}
+                onClick={() => onQuickSymptom(symptom.id)}
+                className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-space-900 px-3 text-[12.5px] text-ink-300 transition-colors hover:border-white/15 hover:bg-space-850 hover:text-ink-100 disabled:opacity-40"
+              >
+                <Icon className="h-4 w-4 text-ink-500" strokeWidth={1.5} />
+                {symptom.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div
         ref={scrollRef}
-        className="scrollbar-thin flex-1 overflow-y-auto rounded-xl border border-white/[0.08] bg-space-900"
+        className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-white/[0.08] bg-space-900 p-3 sm:p-4"
       >
         {messages.map((message) => {
           const crimson = message.actionCard?.color === 'crimson';
-          return (
-            <article
-              key={message.id}
-              className={`border-b border-white/[0.06] px-4 py-4 last:border-b-0 ${
-                message.sender === 'astronaut' ? 'bg-white/[0.015]' : ''
-              }`}
-            >
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-[12px] font-medium text-ink-300">{roleLabel(message)}</span>
-                <span className="text-[11.5px] tabular-nums text-ink-500">{formatTime(message.timestamp)}</span>
-                {message.protocolBadge && (
-                  <span className="ml-auto font-mono text-[11px] text-ink-500">{message.protocolBadge}</span>
-                )}
-              </div>
+          const isUser = message.sender === 'astronaut';
 
-              <div className="mt-2">
-                {message.actionCard ? (
-                  <div>
+          if (message.actionCard) {
+            return (
+              <div key={message.id} className="flex justify-start">
+                <div className="w-full max-w-[92%]">
+                  <div className="mb-1 flex flex-wrap items-center gap-2 text-[11px] text-ink-500">
+                    <span className="font-medium text-ink-400">{roleLabel(message)}</span>
+                    <span className="tabular-nums">{formatTime(message.timestamp)}</span>
+                    {message.protocolBadge && <span className="font-mono">{message.protocolBadge}</span>}
+                  </div>
+                  <div className="rounded-2xl rounded-bl-md border border-white/[0.08] bg-space-850 px-3.5 py-3">
                     <p className="text-[14px] font-medium text-ink-100">{message.actionCard.name}</p>
                     {message.actionCard.description && (
-                      <p className="mt-0.5 text-[13px] leading-5 text-ink-500">{message.actionCard.description}</p>
+                      <p className="mt-0.5 text-[13px] leading-5 text-ink-500">
+                        {message.actionCard.description}
+                      </p>
                     )}
                     <div
                       className={`mt-3 border-l-2 pl-3 ${
@@ -575,57 +804,76 @@ export const AiCopilotTab: React.FC = () => {
                     </div>
                     <p className="mt-2 font-mono text-[11px] text-ink-500">{message.actionCard.nasaCode}</p>
                   </div>
-                ) : message.sender === 'astronaut' ? (
-                  <p className="whitespace-pre-wrap text-[14px] leading-5 text-ink-100">{message.text}</p>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={message.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+              <div className="flex max-w-[85%] flex-col">
+                <div
+                  className={`mb-1 flex flex-wrap items-center gap-2 text-[11px] text-ink-500 ${
+                    isUser ? 'justify-end' : ''
+                  }`}
+                >
+                  <span className="font-medium text-ink-400">{roleLabel(message)}</span>
+                  <span className="tabular-nums">{formatTime(message.timestamp)}</span>
+                  {message.protocolBadge && <span className="font-mono">{message.protocolBadge}</span>}
+                </div>
+                {isUser ? (
+                  <div className="rounded-2xl rounded-br-md border border-signal/25 bg-signal/[0.12] px-3.5 py-2.5">
+                    <p className="whitespace-pre-wrap text-[14px] leading-5 text-ink-100">{message.text}</p>
+                    {message.vitalsSnapshot && (
+                      <p className="mt-1.5 font-mono text-[10.5px] text-ink-400">
+                        HR {message.vitalsSnapshot.heartRate} · SpO2 {message.vitalsSnapshot.spO2}% ·{' '}
+                        {message.vitalsSnapshot.bodyTemp.toFixed(1)}°C
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <RichText text={message.text || (message.isStreaming ? '…' : '')} />
+                  <div className="rounded-2xl rounded-bl-md border border-white/[0.08] bg-space-850 px-3.5 py-2.5">
+                    <RichText text={message.text || (message.isStreaming ? '…' : '')} />
+                    {message.isStreaming && (
+                      <Loader2 className="mt-2 h-3.5 w-3.5 animate-spin text-ink-500" />
+                    )}
+                  </div>
                 )}
               </div>
-
-              {message.sender === 'astronaut' && message.vitalsSnapshot && (
-                <p className="mt-2 font-mono text-[11px] text-ink-500">
-                  Snapshot HR {message.vitalsSnapshot.heartRate} · SpO2 {message.vitalsSnapshot.spO2}% ·{' '}
-                  {message.vitalsSnapshot.bodyTemp.toFixed(1)}°C · GSR {message.vitalsSnapshot.gsrStress.toFixed(1)} ·
-                  Rad {message.vitalsSnapshot.radiationDoseRate.toFixed(2)}
-                </p>
-              )}
-              {message.isStreaming && <Loader2 className="mt-2 h-3.5 w-3.5 animate-spin text-ink-500" />}
-            </article>
+            </div>
           );
         })}
       </div>
 
       <form
-        className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-space-900 p-2 pl-3"
+        className="flex shrink-0 items-center gap-2 rounded-xl border border-white/[0.08] bg-space-900 p-2 pl-3"
         onSubmit={(event) => {
           event.preventDefault();
-          void askSurgeon(draft);
+          void ask(draft);
         }}
       >
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={
-            rulesMode
-              ? 'Describe a symptom, or use a card above'
-              : `Ask ${tierName}, or use a card above`
-          }
-          aria-label="Symptom report"
+          placeholder={doctorMode ? 'Describe a symptom, or use a card above' : 'Message the assistant'}
+          aria-label="Message the AI assistant"
           className="h-10 min-w-0 flex-1 bg-transparent text-[14px] text-ink-100 outline-none placeholder:text-ink-500"
         />
         <button
           type="submit"
           disabled={busy || preparing || !draft.trim()}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-chalk text-space-950 transition-colors hover:brightness-105 disabled:opacity-40"
-          aria-label="Send to the flight surgeon"
+          aria-label="Send to the AI assistant"
         >
           <Send className="h-4 w-4" strokeWidth={1.5} />
         </button>
       </form>
 
-      <p className="text-[11.5px] leading-5 text-ink-500">
-        Training simulation only. It does not replace a real flight surgeon or mission medical rules.
-      </p>
+      {doctorMode && (
+        <p className="shrink-0 text-[11px] leading-5 text-ink-500">
+          Training simulation only. It does not replace real medical care or mission medical rules.
+        </p>
+      )}
     </div>
   );
 };

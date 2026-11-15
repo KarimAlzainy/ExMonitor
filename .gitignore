@@ -5,6 +5,9 @@ dist-ssr
 .vscode
 .DS_Store
 
+# Local archive of a build, kept out of the repository.
+*.rar
+
 tsconfig.tsbuildinfo
 bundles
 dist-app

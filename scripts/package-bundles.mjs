@@ -49,29 +49,29 @@ const MODELS = [
   {
     id: 'phi3',
     title: 'Phi-3.5 mini',
-    folder: 'Ex-Monitor-Phi-3.5',
-    zip: 'ex-monitor-phi3',
+    folder: 'ExMonitor-Phi-3.5',
+    zip: 'exmonitor-phi3',
     download: 'about 2.1 GB'
   },
   {
     id: 'llama3',
     title: 'Llama 3.2 3B',
-    folder: 'Ex-Monitor-Llama-3.2',
-    zip: 'ex-monitor-llama3',
+    folder: 'ExMonitor-Llama-3.2',
+    zip: 'exmonitor-llama3',
     download: 'about 1.8 GB'
   },
   {
     id: 'gemma2',
     title: 'Gemma 2 2B',
-    folder: 'Ex-Monitor-Gemma-2',
-    zip: 'ex-monitor-gemma2',
+    folder: 'ExMonitor-Gemma-2',
+    zip: 'exmonitor-gemma2',
     download: 'about 1.5 GB'
   },
   {
     id: 'none',
     title: 'No AI',
-    folder: 'Ex-Monitor-No-AI',
-    zip: 'ex-monitor-no-ai',
+    folder: 'ExMonitor-No-AI',
+    zip: 'exmonitor-no-ai',
     download: 'nothing'
   }
 ];
@@ -100,7 +100,7 @@ exit /b 0
 
 :missing
 echo.
-echo Node.js 18 or newer is needed to run Ex-Monitor.
+echo Node.js 18 or newer is needed to run ExMonitor.
 echo Install it from https://nodejs.org and run this file again.
 echo.
 pause
@@ -111,7 +111,7 @@ const startShell = `#!/bin/sh
 cd "$(dirname "$0")" || exit 1
 
 if ! command -v node >/dev/null 2>&1; then
-  printf '%s\\n' "Node.js 18 or newer is needed to run Ex-Monitor." "Install it from https://nodejs.org and run this file again."
+  printf '%s\\n' "Node.js 18 or newer is needed to run ExMonitor." "Install it from https://nodejs.org and run this file again."
   read -r _
   exit 1
 fi
@@ -124,29 +124,29 @@ const PLATFORMS = [
     id: 'windows',
     title: 'Windows',
     folderSuffix: 'Windows',
-    launcher: 'Start Ex-Monitor.cmd',
+    launcher: 'Start ExMonitor.cmd',
     content: startWindows,
     mode: undefined,
-    howToStart: 'Double-click "Start Ex-Monitor.cmd".'
+    howToStart: 'Double-click "Start ExMonitor.cmd".'
   },
   {
     id: 'macos',
     title: 'macOS',
     folderSuffix: 'macOS',
-    launcher: 'Start Ex-Monitor.command',
+    launcher: 'Start ExMonitor.command',
     content: startShell,
     mode: 0o755,
     howToStart:
-      'Double-click "Start Ex-Monitor.command". If macOS says it cannot be opened, right-click it, choose Open, then Open again.'
+      'Double-click "Start ExMonitor.command". If macOS says it cannot be opened, right-click it, choose Open, then Open again.'
   },
   {
     id: 'linux',
     title: 'Linux',
     folderSuffix: 'Linux',
-    launcher: 'start-ex-monitor.sh',
+    launcher: 'start-exmonitor.sh',
     content: startShell,
     mode: 0o755,
-    howToStart: 'Run ./start-ex-monitor.sh in a terminal from this folder.'
+    howToStart: 'Run ./start-exmonitor.sh in a terminal from this folder.'
   }
 ];
 
@@ -180,7 +180,7 @@ function readmeFor(model, platform) {
         ];
 
   return [
-    'Ex-Monitor - crew health console',
+    'ExMonitor - crew health console',
     '================================',
     '',
     `This download is made for: ${platform.title}`,

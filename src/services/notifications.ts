@@ -92,7 +92,7 @@ export async function showAlertNotification(event: EmergencyEvent): Promise<bool
 
   const title = `Emergency alert from ${event.astronautName}`;
   const options: NotificationOptions = {
-    body: `${event.title}. Open Ex-Monitor to see the readings and acknowledge.`,
+    body: `${event.title}. Open ExMonitor to see the readings and acknowledge.`,
     tag: event.id,
     icon: ICON,
     badge: ICON,
@@ -107,10 +107,10 @@ export async function showAlertNotification(event: EmergencyEvent): Promise<bool
 export async function showTestNotification(): Promise<boolean> {
   if (alertPermission() !== 'granted') return false;
   const options: NotificationOptions = {
-    body: 'Alerts from other crew devices will appear like this while Ex-Monitor is open.',
+    body: 'Alerts from other crew devices will appear like this while ExMonitor is open.',
     tag: 'exmonitor-test',
     icon: ICON
   };
-  if (showInPage('Ex-Monitor alerts are on', options)) return true;
-  return showWithServiceWorker('Ex-Monitor alerts are on', options);
+  if (showInPage('ExMonitor alerts are on', options)) return true;
+  return showWithServiceWorker('ExMonitor alerts are on', options);
 }

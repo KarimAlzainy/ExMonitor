@@ -15,6 +15,14 @@ export interface ModelOption {
   webllmId: string | null;
 }
 
+/** Where answers come from: a model on this device, or a local Ollama server. */
+export type AiProvider = 'ondevice' | 'ollama';
+
+/** Doctor mode attaches the prompt and the live readings; assistant mode is plain chat. */
+export type ChatMode = 'doctor' | 'assistant';
+
+export type ChatRoleMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+
 export const MODEL_OPTIONS: ModelOption[] = [
   {
     id: 'phi3',
@@ -57,7 +65,41 @@ export const MODEL_OPTIONS: ModelOption[] = [
 const STORED_TIER_KEY = 'exmonitor.ai.tier';
 const STORED_BUNDLE_KEY = 'exmonitor.ai.bundle';
 const STORED_CHOICE_KEY = 'exmonitor.ai.user-chosen';
+const STORED_PROVIDER_KEY = 'exmonitor.ai.provider';
+const STORED_MODE_KEY = 'exmonitor.ai.mode';
 let bundleConfigPromise: Promise<BundleModelConfig | null> | null = null;
+
+export function readProvider(): AiProvider {
+  try {
+    return window.localStorage.getItem(STORED_PROVIDER_KEY) === 'ollama' ? 'ollama' : 'ondevice';
+  } catch {
+    return 'ondevice';
+  }
+}
+
+export function storeProvider(provider: AiProvider): void {
+  try {
+    window.localStorage.setItem(STORED_PROVIDER_KEY, provider);
+  } catch {
+    // Ignore.
+  }
+}
+
+export function readChatMode(): ChatMode {
+  try {
+    return window.localStorage.getItem(STORED_MODE_KEY) === 'assistant' ? 'assistant' : 'doctor';
+  } catch {
+    return 'doctor';
+  }
+}
+
+export function storeChatMode(mode: ChatMode): void {
+  try {
+    window.localStorage.setItem(STORED_MODE_KEY, mode);
+  } catch {
+    // Ignore.
+  }
+}
 
 export function modelOption(tier: AiModelTier): ModelOption {
   return MODEL_OPTIONS.find((option) => option.id === tier) ?? MODEL_OPTIONS[3];
@@ -259,6 +301,21 @@ export function buildFlightSurgeonMessages(payload: {
     },
     { role: 'user' as const, content: userQuery }
   ];
+}
+
+/**
+ * Doctor mode sends the medical prompt and the current readings. Assistant mode
+ * is a plain chat: the question goes straight to the model with no system
+ * prompt and no readings attached.
+ */
+export function buildChatMessages(
+  payload: { userQuery: string; vitals: VitalsData; profile: CrewProfile },
+  mode: ChatMode
+): ChatRoleMessage[] {
+  if (mode === 'assistant') {
+    return [{ role: 'user', content: payload.userQuery }];
+  }
+  return buildFlightSurgeonMessages(payload);
 }
 
 export function buildRulesAnswer(payload: { userQuery: string; vitals: VitalsData }, protocol?: {

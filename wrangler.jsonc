@@ -1,5 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  // The deployed Worker that owns the exmonitor.extem.net custom domain.
+  // Renaming it here would detach that domain, so the name stays.
   "name": "ex-monitor-downloads",
   "main": "worker/index.js",
   "compatibility_date": "2026-11-01",
