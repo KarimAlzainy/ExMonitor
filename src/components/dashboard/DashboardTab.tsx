@@ -19,7 +19,6 @@ export const DashboardTab: React.FC = () => {
     ruleResult,
     triggerEmergencySOS,
     ownAlert,
-    sensorStatus,
     sensorId,
     adoptedSensorId
   } = useTelemetry();
@@ -28,31 +27,19 @@ export const DashboardTab: React.FC = () => {
     ruleResult.statusColor === 'red'
       ? {
           dot: 'bg-critical',
-          title: 'text-critical',
-          border: 'border-critical/30',
-          surface: 'bg-critical/[0.04]'
+          title: 'text-critical'
         }
       : ruleResult.statusColor === 'yellow'
         ? {
             dot: 'bg-caution',
-            title: 'text-caution',
-            border: 'border-caution/30',
-            surface: 'bg-caution/[0.04]'
+            title: 'text-caution'
           }
         : {
             dot: 'bg-positive',
-            title: 'text-ink-100',
-            border: 'border-white/[0.08]',
-            surface: 'bg-space-900'
+            title: 'text-ink-100'
           };
 
   const alertActive = Boolean(ownAlert && ownAlert.status !== 'cancelled');
-  const sensorNotice =
-    sensorStatus === 'waiting'
-      ? 'Waiting for the paired sensor. Practice readings are showing.'
-      : sensorStatus === 'stale'
-        ? 'The paired sensor stopped sending. Practice readings have taken over.'
-        : null;
 
   return (
     <div className="space-y-6">
@@ -71,24 +58,6 @@ export const DashboardTab: React.FC = () => {
             className="text-[13px] font-medium text-signal-strong hover:text-ink-100"
           >
             Manage in Settings
-          </a>
-        </div>
-      )}
-
-      {sensorNotice && (
-        <div className="glass-tint-caution flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3">
-          <p className="flex items-center gap-2 text-[13px] leading-5 text-ink-200">
-            <Radio className="h-4 w-4 shrink-0 text-caution" strokeWidth={1.6} />
-            {sensorNotice}
-            {sensorId && <span className="font-mono text-[11.5px] text-ink-500">{sensorId}</span>}
-          </p>
-          <a
-            href="sensors.html"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[13px] font-medium text-signal-strong hover:text-ink-100"
-          >
-            Open the sensor page
           </a>
         </div>
       )}
@@ -114,7 +83,9 @@ export const DashboardTab: React.FC = () => {
         )}
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+      <EcgMonitor />
+
+      <section className="glass space-y-4 rounded-2xl p-5 sm:p-6">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <VitalCard
             label="Heart rate"
@@ -155,9 +126,7 @@ export const DashboardTab: React.FC = () => {
         </div>
 
         <RadiationHazardBadge />
-      </div>
-
-      <EcgMonitor />
+      </section>
 
       <div className="glass-tint-critical flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 sm:p-5">
         <div className="flex items-start gap-3">

@@ -8,7 +8,6 @@ import { SettingsTab } from './components/setup/SettingsTab';
 import { GuideTab } from './components/guide/GuideTab';
 import { EmergencyOverlay } from './components/emergency/EmergencyOverlay';
 import { SenderAlertPanel } from './components/emergency/SenderAlertPanel';
-import { DemoAlertOverlay } from './components/dashboard/DemoAlertOverlay';
 import { SetupWizard } from './components/onboarding/SetupWizard';
 import { CrewProfile } from './types/telemetry';
 import {
@@ -65,7 +64,6 @@ const AppShell: React.FC<{ onRunSetup: () => void }> = ({ onRunSetup }) => {
       )}
       <SenderAlertPanel />
       <EmergencyOverlay />
-      <DemoAlertOverlay />
     </div>
   );
 };

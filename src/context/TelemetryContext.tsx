@@ -2,7 +2,6 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import {
   AiModelTier,
   CrewProfile,
-  DemoOverlayEvent,
   DemoState,
   EmergencyEvent,
   OwnAlert,
@@ -53,8 +52,6 @@ interface TelemetryContextType {
   pauseDemo: () => void;
   resumeDemo: () => void;
   stopDemo: () => void;
-  demoOverlay: DemoOverlayEvent | null;
-  dismissDemoOverlay: () => void;
   adoptedSensorId: string | null;
 }
 
@@ -130,7 +127,6 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     recommendedModel: 'none'
   });
   const [demo, setDemo] = useState<DemoState>(INITIAL_DEMO);
-  const [demoOverlay, setDemoOverlay] = useState<DemoOverlayEvent | null>(null);
   const [adoptedSensorId, setAdoptedSensorId] = useState<string | null>(null);
 
   const profileRef = useRef(profile);
@@ -153,7 +149,8 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
   const demoStepRef = useRef(0);
   const demoStepStartedAtRef = useRef(0);
   const demoAlertFiredRef = useRef(false);
-  const demoOverlayShownRef = useRef(false);
+  const demoAlertAtRef = useRef(0);
+  const demoAlertClearedRef = useRef(false);
   const demoPreSettledRef = useRef(false);
   const demoPausedAtRef = useRef(0);
 
@@ -455,7 +452,8 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
 
     setOwnAlert({ event, status: 'sending', acknowledgedBy: [] });
     crewLink.sendEmergency(event);
-    audioSynth.playTelemetryPing();
+    // No sound on the sender's own alert: the astronaut raising it may already
+    // be under stress. The crew receiving it gets the full alarm.
 
     if (sentTimerRef.current !== null) window.clearTimeout(sentTimerRef.current);
     sentTimerRef.current = window.setTimeout(() => {
@@ -508,10 +506,10 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     demoStepRef.current = 0;
     demoStepStartedAtRef.current = 0;
     demoAlertFiredRef.current = false;
-    demoOverlayShownRef.current = false;
+    demoAlertAtRef.current = 0;
+    demoAlertClearedRef.current = false;
     demoPreSettledRef.current = false;
     setDemo(INITIAL_DEMO);
-    setDemoOverlay(null);
     if (!wasActive) return;
 
     cancelOwnAlert();
@@ -538,13 +536,13 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     demoStepRef.current = 0;
     demoStepStartedAtRef.current = Date.now();
     demoAlertFiredRef.current = false;
-    demoOverlayShownRef.current = false;
+    demoAlertAtRef.current = 0;
+    demoAlertClearedRef.current = false;
     demoPreSettledRef.current = false;
 
     lastSensorFrameAtRef.current = Date.now();
     lastSensorSeqRef.current = 0;
     setSensorStatus('connected');
-    setDemoOverlay(null);
     setDemo({
       running: true,
       paused: false,
@@ -596,21 +594,27 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
       const frame = current.buildFrame(ecg, ppg);
       applySensorFrame(frame, 'demo');
 
-      // The receiver-style overlay, shown once, at the first real breach.
+      // The astronaut in distress only ever gets the small, silent popup
+      // (the sender panel) — no full-screen takeover and no alarm sound.
       if (step.critical && !demoAlertFiredRef.current) {
         const rule = evaluateBiometrics(vitalsFromFrame(frame));
         if (rule.isTriggerEmergency) {
           demoAlertFiredRef.current = true;
-          if (!demoOverlayShownRef.current) {
-            demoOverlayShownRef.current = true;
-            setDemoOverlay({
-              title: rule.hazardTitle,
-              description: rule.hazardDescription,
-              protocol: rule.nasaRef,
-              stepLabel: step.label
-            });
-          }
+          demoAlertAtRef.current = now;
         }
+      }
+
+      // Hold the small popup long enough to read, then clear it so the next
+      // critical step can raise a fresh alert.
+      if (
+        demoAlertFiredRef.current &&
+        !demoAlertClearedRef.current &&
+        demoAlertAtRef.current > 0 &&
+        now - demoAlertAtRef.current >= 6000
+      ) {
+        demoAlertClearedRef.current = true;
+        cancelOwnAlert();
+        setOwnAlert(null);
       }
 
       const elapsed = (now - demoStepStartedAtRef.current) / 1000;
@@ -627,6 +631,8 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
           cancelOwnAlert();
           setOwnAlert(null);
           demoAlertFiredRef.current = false;
+          demoAlertAtRef.current = 0;
+          demoAlertClearedRef.current = false;
         }
         demoStepRef.current = nextIndex;
         demoStepStartedAtRef.current = now;
@@ -671,10 +677,6 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     demoPausedAtRef.current = 0;
     demoPausedRef.current = false;
     setDemo((previous) => ({ ...previous, paused: false }));
-  }, []);
-
-  const dismissDemoOverlay = useCallback(() => {
-    setDemoOverlay(null);
   }, []);
 
   useEffect(() => {
@@ -736,8 +738,6 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode; initialPro
     pauseDemo,
     resumeDemo,
     stopDemo,
-    demoOverlay,
-    dismissDemoOverlay,
     adoptedSensorId
   };
 

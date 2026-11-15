@@ -22,8 +22,9 @@ export interface DemoStep {
 
 /**
  * Holds are the minimum the stock engine needs to cross the real rule
- * thresholds: blood oxygen takes about 12 s to fall below 88%, and the dose
- * rate needs about 18 s to fall back under 0.30 mSv/hr.
+ * thresholds. Blood oxygen only rounds down to 87% (the critical line is
+ * below 88) after about 20 s of the hypoxia profile, and the dose rate needs
+ * about 18 s of rest to fall back under 0.30 mSv/hr.
  *
  * Settling steps use `rest` (not `recovery`) because the recovery profile
  * holds radiation at 0.35 mSv/hr, which the rules call a caution.
@@ -54,7 +55,7 @@ export const DEMO_STEPS: DemoStep[] = [
     scenario: 'hypoxia',
     label: 'Low oxygen',
     note: 'Blood oxygen falls into the critical range.',
-    seconds: 15,
+    seconds: 24,
     critical: true
   },
   {

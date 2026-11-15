@@ -94,13 +94,6 @@ export interface DemoState {
   progress: number;
 }
 
-export interface DemoOverlayEvent {
-  title: string;
-  description: string;
-  protocol: string;
-  stepLabel: string;
-}
-
 export interface PeerNode {
   nodeId: string;
   name: string;
